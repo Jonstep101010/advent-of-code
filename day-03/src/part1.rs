@@ -20,23 +20,8 @@ fn parse(input: String) -> miette::Result<String> {
 			{
 				data = &data[3..];
 			} else {
-				// assert!(inside.find(",").is_some());
-				let comma = inside.find(",").unwrap();
-				let first_res = inside[..comma].parse::<i64>();
-				// dbg!(&inside[..comma]);
-				let second_res = inside[comma + 1..].parse::<i64>();
-				// dbg!(&inside[comma + 1..]);
-				if first_res.is_ok() && second_res.is_ok() {
-					let mul_product = first_res.unwrap() * second_res.unwrap();
-					if first {
-						total = mul_product;
-						first = false;
-					} else {
-						total += mul_product;
-					}
-				}
-				let data_new = data;
-				let new = &data_new[end - inside.len()..].find("mul(");
+				calc_total(inside, &mut first, &mut total);
+				let new = &data[end - inside.len()..].find("mul(");
 				if new.is_none() {
 					break;
 				}
@@ -51,13 +36,31 @@ fn parse(input: String) -> miette::Result<String> {
 	Ok(total.to_string())
 }
 
+fn calc_total(inside: &str, first: &mut bool, total: &mut i64) {
+	// assert!(inside.find(",").is_some());
+	let comma = inside.find(",").unwrap();
+	let first_res = inside[..comma].parse::<i64>();
+	// dbg!(&inside[..comma]);
+	let second_res = inside[comma + 1..].parse::<i64>();
+	// dbg!(&inside[comma + 1..]);
+	if first_res.is_ok() && second_res.is_ok() {
+		let mul_product = first_res.unwrap() * second_res.unwrap();
+		if *first {
+			*total = mul_product;
+			*first = false;
+		} else {
+			*total += mul_product;
+		}
+	}
+}
+
 #[tracing::instrument]
 pub fn process(input: &str) -> miette::Result<String> {
 	let mut data = String::new();
 	for line in input.lines() {
 		data.push_str(line);
 	}
-	Ok(parse(data)?)
+	parse(data)
 }
 
 #[cfg(test)]
