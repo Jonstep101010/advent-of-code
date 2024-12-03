@@ -10,6 +10,12 @@ pub fn process(input: &str) -> miette::Result<String> {
 		eprintln!("{:#?}", &left);
 		eprintln!("{:#?}", &right);
 	}
+	left.sort();
+	right.sort();
+	// get distance between the two values for each index
+	eprintln!("{:#?}", &left);
+	eprintln!("{:#?}", &right);
+
 	Ok("".to_string())
 }
 
