@@ -29,21 +29,15 @@ fn parse(input: String) -> miette::Result<String> {
 			dbg!(inside);
 			if inside.contains("()") || inside.starts_with("mul(") || inside.ends_with(")") {
 				data = &data[5..];
-				continue;	
 			} else {
 				let comma_exists = inside.find(",");
 				assert!(comma_exists.is_some());
 				let comma = comma_exists.unwrap();
-				// if start > end || comma + 1 > end || comma < start {
-				// 	unreachable!("should not happen: start > end");
-				// }
 				let first_res = inside[..comma].parse::<i32>();
 				dbg!(&inside[..comma]);
 				let second_res = inside[comma + 1..].parse::<i32>();
 				dbg!(&inside[comma + 1..]);
-				if first_res.is_ok()
-					&& second_res.is_ok()
-				{
+				if first_res.is_ok() && second_res.is_ok() {
 					let mul_product = first_res.unwrap() * second_res.unwrap();
 					if first {
 						total = mul_product;
@@ -52,15 +46,17 @@ fn parse(input: String) -> miette::Result<String> {
 						total += mul_product;
 					}
 				} else {
-					dbg!(inside[..comma].parse::<i32>().unwrap());
-					dbg!(inside[comma..].parse::<i32>().unwrap());
+					dbg!(&inside[..comma]);
+					dbg!(&inside[comma + 1..]);
+				}
+				if data[start + 1..].is_empty() {
+					assert_eq!(161, total);
+					dbg!(total);
+					return Ok(total.to_string());
 				}
 				dbg!(&data[start + 1..]);
-				// while &data[start..start + 1] == ")" {
-				// 	start += 1;
-				// }
 				dbg!(&data[start + 1..]);
-				let data_new = data.clone();
+				let data_new = data;
 				let new = &data_new[start + 2..].find("mul(");
 				dbg!(&data_new[new.unwrap() + 2..]);
 				if new.is_some() {
@@ -68,14 +64,16 @@ fn parse(input: String) -> miette::Result<String> {
 					data = &data[start..];
 					dbg!(data);
 				} else {
-					break;
+					continue;
 				}
 			}
 		} else {
-			break ;
+			break;
 		}
 		dbg!(total);
 	}
+	dbg!(total);
+	assert_eq!(161, total);
 	Ok(total.to_string())
 }
 
