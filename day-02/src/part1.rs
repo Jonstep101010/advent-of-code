@@ -1,4 +1,6 @@
-use std::{cmp::Ordering, collections::HashSet};
+use std::{cmp::Ordering, collections::HashSet, fmt::Result};
+
+use miette::Error;
 ///
 /// example
 /// ```
@@ -17,6 +19,57 @@ pub fn has_duplicates(vec: &Vec<i32>) -> bool {
 	false
 }
 
+// check single report
+pub fn check_safe(report: &Vec<i32>) -> miette::Result<String> {
+	// check if duplicate levels in report
+	if has_duplicates(report) {
+		// dbg!(&report);
+		return Err(Error::msg("duplicates"));
+	}
+	let mut sorted_report = report.clone();
+	sorted_report.sort();
+	let mut unsorted_report = sorted_report.clone();
+	unsorted_report.reverse();
+	// dbg!(&report);
+	// dbg!(sorted_report.clone());
+	// dbg!(unsorted_report.clone());
+	let order = match &report {
+		sorted_report => Ordering::Greater,
+		unsorted_report => Ordering::Less,
+		_ => {
+			// unimplemented!("there is no order!")
+			return Err(Error::msg("duplicates"));
+		}
+	};
+	if *report != sorted_report && *report != unsorted_report || report.len() != sorted_report.len()
+	{
+		return Err(Error::msg("fatal unsorted"));
+	}
+	let clone = report.clone();
+	let mut levels = clone.chunks(2);
+	#[allow(clippy::iter_next_loop)]
+	for pair in levels.next() {
+		if order
+			!= if pair.windows(2).all(|w| w[0] < w[1]) {
+				Ordering::Less // Ascending order
+			} else if pair.windows(2).all(|w| w[0] > w[1]) {
+				Ordering::Greater // Descending order
+			} else {
+				// Err(Error::msg("there is no order!"))
+				unimplemented!("error fatal");
+				// Ordering::Equal // Not sorted
+			} {}
+		if pair.windows(2).all(|w| w[0].abs_diff(w[1]) < 4) {
+			return Err(Error::msg("diff > 3"));
+		}
+		eprintln!("pair: {:?}", pair);
+	}
+	// check distance between the two numbers: <= 3
+	// check ordering alignment (does not change)
+
+	Ok("".to_string())
+}
+
 #[tracing::instrument]
 pub fn process(input: &str) -> miette::Result<String> {
 	let mut reports = vec![];
@@ -30,55 +83,14 @@ pub fn process(input: &str) -> miette::Result<String> {
 	}
 	let mut safe_reports = 0;
 	for report in &mut reports {
-		// check if duplicate levels in report
-		if has_duplicates(report) {
-			dbg!(&report);
-			eprintln!("has duplicates!");
-			break;
+		match check_safe(&report) {
+			Ok(_) => {
+				safe_reports += 1;
+			}
+			Err(e) => {
+				println!("Error: {}", e);
+			}
 		}
-		let mut sorted_report = report.clone();
-		sorted_report.sort();
-		let mut unsorted_report = sorted_report.clone();
-		unsorted_report.reverse();
-		dbg!(&report);
-		dbg!(sorted_report.clone());
-		dbg!(unsorted_report.clone());
-		let order = match &report {
-			sorted_report => Ordering::Greater,
-			unsorted_report => Ordering::Less,
-			_ => {
-				unimplemented!("there is no order!")
-			}
-		};
-		let clone = report.clone();
-		let mut levels = clone.chunks(2);
-		#[allow(clippy::iter_next_loop)]
-		for pair in levels.next() {
-			if order
-				!= if pair.windows(2).all(|w| w[0] < w[1]) {
-					Ordering::Less // Ascending order
-				} else if pair.windows(2).all(|w| w[0] > w[1]) {
-					Ordering::Greater // Descending order
-				} else {
-					unimplemented!("error fatal");
-					break;
-					Ordering::Equal // Not sorted
-				} {
-				eprintln!("error!!!!!!");
-				break;
-			}
-			assert_ne!(order, Ordering::Equal);
-			if pair.windows(2).all(|w| w[0].abs_diff(w[1]) > 3) {
-				eprintln!("error!!!!!!");
-				break;
-			}
-			safe_reports += 1;
-			eprintln!("pair: {:?}", pair);
-		}
-		eprintln!("sorted: {:?}", sorted_report);
-		eprintln!("unsorted: {:?}", unsorted_report);
-		// check distance between the two numbers: <= 3
-		// check ordering alignment (does not change)
 	}
 	Ok(safe_reports.to_string())
 }
