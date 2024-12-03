@@ -1,3 +1,4 @@
 scripts/
 daily-template/
 justfile
+**/target/
