@@ -19,7 +19,7 @@ pub fn process(input: &str) -> miette::Result<String> {
 	eprintln!("{:#?}", &right);
 	let mut distance = 0;
 	for i in 0..left.len() {
-		let diff = max(left[i], right[i]) - min(left[i], right[i]);
+		let diff = left[i].abs_diff(right[i]);
 		eprintln!("{:#?}", diff);
 		distance += diff;
 	}
