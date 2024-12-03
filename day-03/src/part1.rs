@@ -5,37 +5,30 @@ fn parse(input: String) -> miette::Result<String> {
 	let outer_end = input.rfind(")").unwrap();
 	let mut data = &input[begin..outer_end + 1];
 	dbg!(data);
-	// find "mul(", from there search for ")"
-	// start, end of calc set from ()
-	// -> find "," and numbers enclosed
-	// mul(number1,number2)
-	// 0123       varies  varies
 	let mut first = true;
-	let mut total = 0;
+	let mut total: i64 = 0;
 	loop {
-		// if data.starts_with(")") {
-		// 	if data.as_bytes().len() == 1 {
-		// 		break;
-		// 	}
-		// 	data = &data[1..]
-		// }
-		if data.find("mul(").is_some() && data.find(")").is_some() {
-			let mut start = data.find("mul(").unwrap();
+		if data.contains("mul(") && data.contains(")") && data.contains(",") {
+			let start = data.find("mul(").unwrap();
 			data = &data[start..];
 			dbg!(data);
 			let end = data.find(")").unwrap();
 			dbg!(&data[0..end + 1]);
 			let inside = &data[4..end];
 			dbg!(inside);
-			if inside.contains("()") || inside.starts_with("mul(") || inside.ends_with(")") {
-				data = &data[5..];
+			if inside.contains("()")
+				|| inside.starts_with("mul(")
+				|| inside.ends_with(")")
+				|| !inside.contains(",")
+			{
+				data = &data[3..];
 			} else {
 				let comma_exists = inside.find(",");
 				assert!(comma_exists.is_some());
 				let comma = comma_exists.unwrap();
-				let first_res = inside[..comma].parse::<i32>();
+				let first_res = inside[..comma].parse::<i64>();
 				dbg!(&inside[..comma]);
-				let second_res = inside[comma + 1..].parse::<i32>();
+				let second_res = inside[comma + 1..].parse::<i64>();
 				dbg!(&inside[comma + 1..]);
 				if first_res.is_ok() && second_res.is_ok() {
 					let mul_product = first_res.unwrap() * second_res.unwrap();
@@ -45,26 +38,14 @@ fn parse(input: String) -> miette::Result<String> {
 					} else {
 						total += mul_product;
 					}
-				} else {
-					dbg!(&inside[..comma]);
-					dbg!(&inside[comma + 1..]);
 				}
-				if data[start + 1..].is_empty() {
-					assert_eq!(161, total);
-					dbg!(total);
-					return Ok(total.to_string());
-				}
-				dbg!(&data[start + 1..]);
-				dbg!(&data[start + 1..]);
 				let data_new = data;
-				let new = &data_new[start + 2..].find("mul(");
-				dbg!(&data_new[new.unwrap() + 2..]);
+				let new = &data_new[start + 1..].find("mul(");
 				if new.is_some() {
-					start = new.unwrap();
-					data = &data[start..];
+					data = &data[new.unwrap()..];
 					dbg!(data);
 				} else {
-					continue;
+					break;
 				}
 			}
 		} else {
@@ -73,7 +54,6 @@ fn parse(input: String) -> miette::Result<String> {
 		dbg!(total);
 	}
 	dbg!(total);
-	assert_eq!(161, total);
 	Ok(total.to_string())
 }
 
@@ -96,6 +76,12 @@ mod tests {
 		let input = "xmul(2,4)%&mul[3,7]!@^do_not_mul(5,5)+mul(32,64]then(mul(11,8)mul(8,5))";
 		// 161 = (2*4 + 5*5 + 11*8 + 8*5)
 		assert_eq!("161", process(input)?);
+		Ok(())
+	}
+	#[test]
+	fn test_infinite() -> miette::Result<()> {
+		let input = "mul(84,895)who(177,299)";
+		assert_eq!("75180", process(input)?);
 		Ok(())
 	}
 }
