@@ -8,13 +8,12 @@ pub fn process(input: &str) -> miette::Result<String> {
 		left.push(content.next().unwrap().parse::<i32>().unwrap());
 		right.push(content.next().unwrap().parse::<i32>().unwrap());
 	}
-	let mut score = 0;
 	// val = left[i]
-	for val in left.iter() {
-		// multiply val by amount of times it appears in right
-		// sum all vals
-		score += val * right.iter().filter(|&x| x == val).count() as i32;
-	}
+	// multiply val by amount of times it appears in right
+	// sum all vals
+	let score = left.iter().fold(0, |similarity_acc, &val| {
+		similarity_acc + val * right.iter().filter(|&&right_val| right_val == val).count() as i32
+	});
 	Ok(score.to_string())
 }
 
