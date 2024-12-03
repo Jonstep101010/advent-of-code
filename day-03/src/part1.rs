@@ -1,11 +1,9 @@
 // use nom::*;
 
-use nom::FindSubstring;
-
 fn parse(input: String) -> miette::Result<String> {
-	let start = input.find("mul(").unwrap();
-	let end = input.rfind(")").unwrap();
-	let mut data = &input[start..end + 1];
+	let begin = input.find("mul(").unwrap();
+	let outer_end = input.rfind(")").unwrap();
+	let mut data = &input[begin..outer_end + 1];
 	dbg!(data);
 	// find "mul(", from there search for ")"
 	// start, end of calc set from ()
@@ -22,81 +20,61 @@ fn parse(input: String) -> miette::Result<String> {
 		// 	data = &data[1..]
 		// }
 		if data.find("mul(").is_some() && data.find(")").is_some() {
-			let start = data.find("mul(").unwrap();
-			let comma_exists = data.find(",");
-			assert!(comma_exists.is_some());
-			let comma = comma_exists.unwrap();
-			let end = data.find(")").unwrap();
-			if start > end || comma + 1 > end || comma < start {
-				unreachable!("should not happen: start > end");
-			}
-			dbg!(&data[start + 4..comma]);
-			dbg!(&data[comma + 1..end]);
-			if data[start + 4..comma].parse::<i32>().is_ok()
-				&& data[comma..end].parse::<i32>().is_ok()
-			{
-				dbg!(data);
-				dbg!(&data[start..]);
-				dbg!(&data[start..end]);
-				let cur_elem = &data[start + 4..end];
-				dbg!(cur_elem);
-				// assert!(cur_elem.starts_with("mul("));
-				// assert!(cur_elem.ends_with(")"));
-				if !cur_elem.contains(",") {
-					dbg!(data);
-					continue;
-				}
-				// check that inside is num1,num2
-				dbg!(start);
-				dbg!(end);
-				// dbg!(&cur_elem[start..]);
-				let inside = cur_elem;
-				dbg!(inside);
-				let split_comma: Vec<&str> = inside.split(",").collect();
-				dbg!(&split_comma);
-				if split_comma.len() == 2 {
-					let first_result = split_comma[0].parse::<i32>();
-					let second_result = split_comma[1].parse::<i32>();
-					if first_result.is_ok() && second_result.is_ok() {
-						let to_calc = (
-							first_result.clone().unwrap(),
-							second_result.clone().unwrap(),
-						);
-						dbg!(&to_calc.0);
-						dbg!(&to_calc.1);
-						let mul_product = to_calc.0 * to_calc.1;
-						if first {
-							total = mul_product;
-							first = false;
-						} else {
-							total += mul_product;
-						}
-						let cur_slice = &data[end..];
-						let bind = cur_slice.find("mul(");
-						if bind.is_some() {
-							data = &cur_slice[bind.unwrap()..];
-						} else {
-							break;
-						}
-						dbg!(data);
-					}
-				} else {
-					let cur_slice = &data[end..];
-					let bind = cur_slice.find("mul(");
-					if bind.is_some() {
-						data = &cur_slice[bind.unwrap()..];
-					} else {
-						break;
-					}
-				}
-			} else {
-				data = &data[start..];
-				dbg!(data);
-			}
-		} else {
+			let mut start = data.find("mul(").unwrap();
 			data = &data[start..];
 			dbg!(data);
+			let end = data.find(")").unwrap();
+			dbg!(&data[0..end + 1]);
+			let inside = &data[4..end];
+			dbg!(inside);
+			if inside.contains("()") || inside.starts_with("mul(") || inside.ends_with(")") {
+				data = &data[5..];
+				continue;	
+			} else {
+				let comma_exists = inside.find(",");
+				assert!(comma_exists.is_some());
+				let comma = comma_exists.unwrap();
+				// if start > end || comma + 1 > end || comma < start {
+				// 	unreachable!("should not happen: start > end");
+				// }
+				let first_res = inside[..comma].parse::<i32>();
+				dbg!(&inside[..comma]);
+				let second_res = inside[comma + 1..].parse::<i32>();
+				dbg!(&inside[comma + 1..]);
+				if first_res.is_ok()
+					&& second_res.is_ok()
+				{
+					let mul_product = first_res.unwrap() * second_res.unwrap();
+					if first {
+						total = mul_product;
+						first = false;
+					} else {
+						total += mul_product;
+					}
+				} else {
+					dbg!(inside[..comma].parse::<i32>().unwrap());
+					dbg!(inside[comma..].parse::<i32>().unwrap());
+				}
+				dbg!(&data[start + 1..]);
+				// while &data[start..start + 1] == ")" {
+				// 	start += 1;
+				// }
+				dbg!(&data[start + 1..]);
+				let data_new = data.clone();
+				let new = &data_new[start + 2..].find("mul(");
+				dbg!(&data_new[new.unwrap() + 2..]);
+				if new.is_some() {
+					start = new.unwrap();
+					data = &data[start..];
+					dbg!(data);
+				} else {
+					break;
+				}
+			}
+		} else {
+			break ;
 		}
+		dbg!(total);
 	}
 	Ok(total.to_string())
 }
