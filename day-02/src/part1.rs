@@ -1,57 +1,44 @@
-use std::{cmp::Ordering, collections::HashSet, fmt::Result};
+use std::{cmp::Ordering, collections::HashSet};
 
 use itertools::Itertools;
 use miette::Error;
-///
-/// example
-/// ```
-/// use day_02::part1::has_duplicates;
-/// assert_eq!(true, has_duplicates(&vec![8, 6, 4, 4, 1]));
-/// assert_eq!(true, has_duplicates(&vec![8, 6, 4, 1, 4]));
-/// assert_eq!(false, has_duplicates(&vec![8, 6, 4, 1, 3]));
-/// ```
-pub fn has_duplicates(vec: &Vec<i32>) -> bool {
-	let mut seen = HashSet::new();
-	for &value in vec {
-		if !seen.insert(value) {
-			return true;
-		}
-	}
-	false
-}
-
-pub fn assertions(report: &Vec<i32>) -> Vec<i32> {
-	let mut sorted_report = report.clone();
-	sorted_report.sort();
-	let mut unsorted_report = sorted_report.clone();
-	unsorted_report.reverse();
-	assert_eq!(sorted_report.len(), report.len());
-	if sorted_report == *report {
-		sorted_report
-	} else {
-		unsorted_report
-	}
-}
 
 // check single report
 pub fn check_safe(report: &Vec<i32>) -> miette::Result<String> {
-	if assertions(&report) != *report {
-		return Err(Error::msg("no order"));
+	if report.len() < 2 {
+		return Err(Error::msg("too short"));
 	}
-	// check distance between the two numbers: <= 3
+	let mut seen = HashSet::new();
+	for &value in report {
+		if !seen.insert(value) {
+			return Err(Error::msg("duplicates"));
+		}
+	}
+	// check first two levels for order
+	let order = {
+		if report[0] < report[1] {
+			Ordering::Greater
+		} else {
+			Ordering::Less
+		}
+	};
+
 	for (a, b) in report.iter().tuple_windows() {
 		let diff = a.abs_diff(*b);
 		if diff == 0 {
 			return Err(Error::msg("duplicates"));
+		} else if diff > 3 {
+			// check distance between the two numbers: <= 3
+			return Err(Error::msg("diff > 3"));
 		} else {
-			if diff > 3 {
-				return Err(Error::msg("diff > 3"));
+			// check that order has been kept
+			if a < b && order != Ordering::Greater {
+				return Err(Error::msg("order has changed to descending"));
+			} else if a > b && order != Ordering::Less {
+				return Err(Error::msg("order has changed to ascending"));
 			}
-			// TODO: implement actual checks for order
 		}
 	}
-	// check ordering alignment (does not change)
-
 	Ok("".to_string())
 }
 
@@ -68,7 +55,7 @@ pub fn process(input: &str) -> miette::Result<String> {
 	}
 	let mut safe_reports = 0;
 	for report in &mut reports {
-		match check_safe(&report) {
+		match check_safe(report) {
 			Ok(_) => {
 				safe_reports += 1;
 			}
