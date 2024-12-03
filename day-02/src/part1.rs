@@ -1,19 +1,20 @@
-use std::{cmp::Ordering, collections::HashSet};
+use std::cmp::Ordering;
 
 use itertools::Itertools;
 use miette::Error;
 
 // check single report
-pub fn check_safe(report: &Vec<i32>) -> miette::Result<String> {
+pub fn check_safe(report: &[i32]) -> miette::Result<String> {
 	if report.len() < 2 {
 		return Err(Error::msg("too short"));
 	}
-	let mut seen = HashSet::new();
-	for &value in report {
-		if !seen.insert(value) {
-			return Err(Error::msg("duplicates"));
+	report.iter().try_for_each(|&value| {
+		if report.iter().filter(|&&v| v == value).count() > 1 {
+			Err(Error::msg("duplicates"))
+		} else {
+			Ok(())
 		}
-	}
+	})?;
 	// check first two levels for order
 	let order = {
 		if report[0] < report[1] {
@@ -30,13 +31,12 @@ pub fn check_safe(report: &Vec<i32>) -> miette::Result<String> {
 		} else if diff > 3 {
 			// check distance between the two numbers: <= 3
 			return Err(Error::msg("diff > 3"));
-		} else {
-			// check that order has been kept
-			if a < b && order != Ordering::Greater {
-				return Err(Error::msg("order has changed to descending"));
-			} else if a > b && order != Ordering::Less {
-				return Err(Error::msg("order has changed to ascending"));
-			}
+		}
+		// check that order has been kept
+		if a < b && order != Ordering::Greater {
+			return Err(Error::msg("order has changed to descending"));
+		} else if a > b && order != Ordering::Less {
+			return Err(Error::msg("order has changed to ascending"));
 		}
 	}
 	Ok("".to_string())
