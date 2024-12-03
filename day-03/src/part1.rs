@@ -40,7 +40,7 @@ fn parse(input: String) -> miette::Result<String> {
 					}
 				}
 				let data_new = data;
-				let new = &data_new[start + 1..].find("mul(");
+				let new = &data_new[end - inside.len()..].find("mul(");
 				if new.is_some() {
 					data = &data[new.unwrap()..];
 					dbg!(data);
