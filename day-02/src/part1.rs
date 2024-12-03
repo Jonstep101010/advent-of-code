@@ -1,5 +1,6 @@
 use std::{cmp::Ordering, collections::HashSet, fmt::Result};
 
+use itertools::Itertools;
 use miette::Error;
 ///
 /// example
@@ -19,52 +20,36 @@ pub fn has_duplicates(vec: &Vec<i32>) -> bool {
 	false
 }
 
-// check single report
-pub fn check_safe(report: &Vec<i32>) -> miette::Result<String> {
-	// check if duplicate levels in report
-	if has_duplicates(report) {
-		// dbg!(&report);
-		return Err(Error::msg("duplicates"));
-	}
+pub fn assertions(report: &Vec<i32>) -> Vec<i32> {
 	let mut sorted_report = report.clone();
 	sorted_report.sort();
 	let mut unsorted_report = sorted_report.clone();
 	unsorted_report.reverse();
-	// dbg!(&report);
-	// dbg!(sorted_report.clone());
-	// dbg!(unsorted_report.clone());
-	let order = match &report {
-		sorted_report => Ordering::Greater,
-		unsorted_report => Ordering::Less,
-		_ => {
-			// unimplemented!("there is no order!")
-			return Err(Error::msg("duplicates"));
-		}
-	};
-	if *report != sorted_report && *report != unsorted_report || report.len() != sorted_report.len()
-	{
-		return Err(Error::msg("fatal unsorted"));
+	assert_eq!(sorted_report.len(), report.len());
+	if sorted_report == *report {
+		sorted_report
+	} else {
+		unsorted_report
 	}
-	let clone = report.clone();
-	let mut levels = clone.chunks(2);
-	#[allow(clippy::iter_next_loop)]
-	for pair in levels.next() {
-		if order
-			!= if pair.windows(2).all(|w| w[0] < w[1]) {
-				Ordering::Less // Ascending order
-			} else if pair.windows(2).all(|w| w[0] > w[1]) {
-				Ordering::Greater // Descending order
-			} else {
-				// Err(Error::msg("there is no order!"))
-				unimplemented!("error fatal");
-				// Ordering::Equal // Not sorted
-			} {}
-		if pair.windows(2).all(|w| w[0].abs_diff(w[1]) < 4) {
-			return Err(Error::msg("diff > 3"));
-		}
-		eprintln!("pair: {:?}", pair);
+}
+
+// check single report
+pub fn check_safe(report: &Vec<i32>) -> miette::Result<String> {
+	if assertions(&report) != *report {
+		return Err(Error::msg("no order"));
 	}
 	// check distance between the two numbers: <= 3
+	for (a, b) in report.iter().tuple_windows() {
+		let diff = a.abs_diff(*b);
+		if diff == 0 {
+			return Err(Error::msg("duplicates"));
+		} else {
+			if diff > 3 {
+				return Err(Error::msg("diff > 3"));
+			}
+			// TODO: implement actual checks for order
+		}
+	}
 	// check ordering alignment (does not change)
 
 	Ok("".to_string())
