@@ -1,21 +1,18 @@
 // use nom::*;
 
 fn parse(input: String) -> miette::Result<String> {
-	let begin = input.find("mul(").unwrap();
-	let outer_end = input.rfind(")").unwrap();
-	let mut data = &input[begin..outer_end + 1];
-	dbg!(data);
+	let mut data = &input[..];
 	let mut first = true;
 	let mut total: i64 = 0;
 	loop {
 		if data.contains("mul(") && data.contains(")") && data.contains(",") {
 			let start = data.find("mul(").unwrap();
 			data = &data[start..];
-			dbg!(data);
+			// dbg!(data);
 			let end = data.find(")").unwrap();
-			dbg!(&data[0..end + 1]);
+			// dbg!(&data[0..end + 1]);
 			let inside = &data[4..end];
-			dbg!(inside);
+			// dbg!(inside);
 			if inside.contains("()")
 				|| inside.starts_with("mul(")
 				|| inside.ends_with(")")
@@ -23,13 +20,12 @@ fn parse(input: String) -> miette::Result<String> {
 			{
 				data = &data[3..];
 			} else {
-				let comma_exists = inside.find(",");
-				assert!(comma_exists.is_some());
-				let comma = comma_exists.unwrap();
+				// assert!(inside.find(",").is_some());
+				let comma = inside.find(",").unwrap();
 				let first_res = inside[..comma].parse::<i64>();
-				dbg!(&inside[..comma]);
+				// dbg!(&inside[..comma]);
 				let second_res = inside[comma + 1..].parse::<i64>();
-				dbg!(&inside[comma + 1..]);
+				// dbg!(&inside[comma + 1..]);
 				if first_res.is_ok() && second_res.is_ok() {
 					let mul_product = first_res.unwrap() * second_res.unwrap();
 					if first {
@@ -41,19 +37,17 @@ fn parse(input: String) -> miette::Result<String> {
 				}
 				let data_new = data;
 				let new = &data_new[end - inside.len()..].find("mul(");
-				if new.is_some() {
-					data = &data[new.unwrap()..];
-					dbg!(data);
-				} else {
+				if new.is_none() {
 					break;
 				}
+				data = &data[new.unwrap()..];
 			}
 		} else {
 			break;
 		}
-		dbg!(total);
+		// dbg!(total);
 	}
-	dbg!(total);
+	// dbg!(total);
 	Ok(total.to_string())
 }
 
@@ -63,8 +57,7 @@ pub fn process(input: &str) -> miette::Result<String> {
 	for line in input.lines() {
 		data.push_str(line);
 	}
-	let parsed = parse(data)?;
-	Ok(parsed)
+	Ok(parse(data)?)
 }
 
 #[cfg(test)]
