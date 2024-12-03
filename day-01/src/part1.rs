@@ -1,3 +1,5 @@
+use std::cmp::{max, min};
+
 #[tracing::instrument]
 pub fn process(input: &str) -> miette::Result<String> {
 	let mut left = vec![];
@@ -15,8 +17,14 @@ pub fn process(input: &str) -> miette::Result<String> {
 	// get distance between the two values for each index
 	eprintln!("{:#?}", &left);
 	eprintln!("{:#?}", &right);
-
-	Ok("".to_string())
+	let mut distance = 0;
+	for i in 0..left.len() {
+		let diff = max(left[i], right[i]) - min(left[i], right[i]);
+		eprintln!("{:#?}", diff);
+		distance += diff;
+	}
+	eprintln!("{:#?}", distance);
+	Ok(distance.to_string())
 }
 
 #[cfg(test)]
@@ -36,5 +44,16 @@ mod tests {
 		54117   62675
 25659   15179";
 		process(input).unwrap();
+	}
+	#[test]
+	fn test_task() -> miette::Result<()> {
+		let input = "3 4
+4 3
+2 5
+1 3
+3 9
+3 3";
+		assert_eq!("11", process(input)?);
+		Ok(())
 	}
 }
