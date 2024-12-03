@@ -1,5 +1,3 @@
-use std::cmp::{max, min};
-
 #[tracing::instrument]
 pub fn process(input: &str) -> miette::Result<String> {
 	let mut left = vec![];
@@ -14,15 +12,14 @@ pub fn process(input: &str) -> miette::Result<String> {
 	}
 	left.sort();
 	right.sort();
-	// get distance between the two values for each index
+	// get distance between the two values for each index, sum them up
 	eprintln!("{:#?}", &left);
 	eprintln!("{:#?}", &right);
-	let mut distance = 0;
-	for i in 0..left.len() {
-		let diff = left[i].abs_diff(right[i]);
-		eprintln!("{:#?}", diff);
-		distance += diff;
-	}
+	let distance: u32 = left
+		.iter()
+		.zip(right.iter())
+		.map(|(l, r)| l.abs_diff(*r))
+		.sum();
 	eprintln!("{:#?}", distance);
 	Ok(distance.to_string())
 }
@@ -31,13 +28,6 @@ pub fn process(input: &str) -> miette::Result<String> {
 mod tests {
 	use super::*;
 
-	#[test]
-	fn test_process() -> miette::Result<()> {
-		todo!("haven't built test yet");
-		let input = "";
-		assert_eq!("", process(input)?);
-		Ok(())
-	}
 	#[test]
 	fn test_basic() {
 		let input = "46669   36559

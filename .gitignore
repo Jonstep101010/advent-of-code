@@ -2,3 +2,5 @@ scripts/
 daily-template/
 justfile
 **/target/
+.env
+**/task.md
