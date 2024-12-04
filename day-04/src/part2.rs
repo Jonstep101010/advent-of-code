@@ -1,9 +1,9 @@
 // if a pattern matches at position (x, y)
 fn match_pattern(grid: &[Vec<char>], pattern: &[Vec<char>], x: usize, y: usize) -> bool {
-	for (i, pattern_row) in pattern.iter().enumerate() {
-		for (j, &p_char) in pattern_row.iter().enumerate() {
-			let grid_x = x + i;
-			let grid_y = y + j;
+	for (x_i, pattern_row) in pattern.iter().enumerate() {
+		for (y_i, &p_char) in pattern_row.iter().enumerate() {
+			let grid_x = x + x_i;
+			let grid_y = y + y_i;
 			// Check boundaries
 			if grid_x >= grid.len() || grid_y >= grid[0].len() {
 				return false;
@@ -46,12 +46,11 @@ pub fn process(input: &str) -> miette::Result<String> {
 	let rows = grid.len();
 	let cols = if rows > 0 { grid[0].len() } else { 0 };
 
-	let pattern_size = 3;
 	let mut count = 0;
 
 	// Iterate over each position where the pattern can fit
-	for i in 0..=rows.saturating_sub(pattern_size) {
-		for ii in 0..=cols.saturating_sub(pattern_size) {
+	for i in 0..=rows.saturating_sub(3) {
+		for ii in 0..=cols.saturating_sub(3) {
 			for pattern in &patterns {
 				if match_pattern(&grid, pattern, i, ii) {
 					count += 1;
