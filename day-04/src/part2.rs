@@ -1,16 +1,13 @@
 // if a pattern matches at position (x, y)
 fn match_pattern(grid: &[Vec<char>], pattern: &[Vec<char>], x: usize, y: usize) -> bool {
-	let pattern_rows = pattern.len();
-	let pattern_cols = pattern[0].len();
-	for i in 0..pattern_rows {
-		for ii in 0..pattern_cols {
+	for (i, pattern_row) in pattern.iter().enumerate() {
+		for (j, &p_char) in pattern_row.iter().enumerate() {
 			let grid_x = x + i;
-			let grid_y = y + ii;
+			let grid_y = y + j;
 			// Check boundaries
 			if grid_x >= grid.len() || grid_y >= grid[0].len() {
 				return false;
 			}
-			let p_char = pattern[i][ii];
 			if p_char != '_' && grid[grid_x][grid_y] != p_char {
 				return false;
 			}
