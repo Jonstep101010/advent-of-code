@@ -1,21 +1,21 @@
 // check if the word exists starting from (x, y) in a given direction (dx, dy)
 fn search(grid: &[Vec<char>], x: usize, y: usize, dx: isize, dy: isize) -> usize {
-	let mut x = x as isize;
-	let mut y = y as isize;
 	let rows = grid.len() as isize;
 	let cols = grid[0].len() as isize; // has to be square
-	for ch in "XMAS".chars() {
-		// Check boundaries
-		if x < 0 || x >= rows || y < 0 || y >= cols {
+	// Iterate over characters while updating coordinates
+	for (ch, (cur_x, cur_y)) in "XMAS".chars().zip(std::iter::successors(
+		Some((x as isize, y as isize)),
+		|&(px, py)| Some((px + dx, py + dy)),
+	)) {
+		// Check bounds and character match in one go
+		if cur_x < 0
+			|| cur_x >= rows
+			|| cur_y < 0
+			|| cur_y >= cols
+			|| grid[cur_x as usize][cur_y as usize] != ch
+		{
 			return 0;
 		}
-		// Check if the character matches
-		if grid[x as usize][y as usize] != ch {
-			return 0;
-		}
-		// Move to the next cell in the direction (dx, dy)
-		x += dx;
-		y += dy;
 	}
 	1
 }
