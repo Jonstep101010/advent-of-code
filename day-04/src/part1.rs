@@ -26,17 +26,6 @@ pub fn process(input: &str) -> miette::Result<String> {
 
 	let word_chars: Vec<char> = "XMAS".chars().collect();
 
-	// Directions to search over row idx
-	let directions = [
-		(-1, 0),  // Up
-		(0, 1),   // Right
-		(1, 0),   // Down
-		(0, -1),  // Left
-		(1, 1),   // Diag: Down-right
-		(1, -1),  // Diag: Down-left
-		(-1, -1), // Diag: Up-left
-		(-1, 1),  // Diag: Up-right
-	];
 	let rows = grid.len();
 	let cols = if rows > 0 { grid[0].len() } else { 0 };
 
@@ -45,9 +34,20 @@ pub fn process(input: &str) -> miette::Result<String> {
 	for i in 0..rows {
 		for ii in 0..cols {
 			// For each direction, try to find the word starting from (i, ii)
-			for &(dx, dy) in &directions {
+			[
+				(-1, 0),  // Up
+				(0, 1),   // Right
+				(1, 0),   // Down
+				(0, -1),  // Left
+				(1, 1),   // Diag: Down-right
+				(1, -1),  // Diag: Down-left
+				(-1, -1), // Diag: Up-left
+				(-1, 1),  // Diag: Up-right
+			]
+			.iter()
+			.for_each(|&(dx, dy)| {
 				count += search(&grid, &word_chars, i, ii, dx, dy);
-			}
+			});
 		}
 	}
 	Ok(count.to_string())
