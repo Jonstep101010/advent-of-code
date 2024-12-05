@@ -11,10 +11,10 @@ use itertools::Itertools;
 // 53 is correctly fourth because it is before page number 29 (53|29).
 // 29 is the only page left and so is correctly last.
 fn check_safe(rules: &Vec<(u32, u32)>, update: &[u32]) -> Result<u32, ()> {
-	for numbers in update.iter().tuple_windows::<(_, _)>() {
+	for (&left, &right) in update.iter().tuple_windows::<(_, _)>() {
 		let mut found = false;
 		for rule in rules {
-			if rule.0 == *numbers.0 && rule.1 == *numbers.1 {
+			if rule.0 == left && rule.1 == right {
 				found = true;
 				break;
 			}
@@ -33,14 +33,20 @@ pub fn process(input: &str) -> miette::Result<String> {
 	let mut updates = vec![];
 	for line in input.lines() {
 		if line.contains('|') {
-			let mut parts = line.split('|');
-			let left = parts.next().unwrap().trim().parse::<u32>().unwrap();
-			let right = parts.next().unwrap().trim().parse::<u32>().unwrap();
+			let (left, right) = line
+				.split('|')
+				.next_tuple()
+				.map(|(l, r)| {
+					(
+						l.trim().parse::<u32>().unwrap(),
+						r.trim().parse::<u32>().unwrap(),
+					)
+				})
+				.unwrap();
 			rules.push((left, right));
 		} else if line.contains(',') {
-			let parts = line.split(',');
 			updates.push(
-				parts
+				line.split(',')
 					.map(|x| x.trim().parse::<u32>().unwrap())
 					.collect_vec(),
 			);
