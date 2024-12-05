@@ -5,8 +5,8 @@
 //     97,13,75,29,47 becomes 97,75,47,29,13.
 
 // After taking only the incorrectly-ordered updates and ordering them correctly, their middle page numbers are 47, 29, and 47. Adding these together produces 123.
-fn apply_rules(rules: &Vec<(u32, u32)>, update: &Vec<u32>) -> u32 {
-	let mut update = update.clone();
+fn apply_rules(rules: &Vec<(u32, u32)>, update: &[u32]) -> u32 {
+	let mut update = update.to_owned();
 	for i in 0..update.len() - 1 {
 		for j in i + 1..update.len() {
 			for rule in rules {
@@ -30,7 +30,7 @@ use itertools::Itertools;
 // 61 is correctly in the middle because 75 and 47 are before it (75|61 and 47|61) and 53 and 29 are after it (61|53 and 61|29).
 // 53 is correctly fourth because it is before page number 29 (53|29).
 // 29 is the only page left and so is correctly last.
-fn check_safe(rules: &Vec<(u32, u32)>, update: &Vec<u32>) -> Result<u32, ()> {
+fn check_safe(rules: &Vec<(u32, u32)>, update: &[u32]) -> Result<u32, ()> {
 	for numbers in update.iter().tuple_windows::<(_, _)>() {
 		let mut found = false;
 		for rule in rules {

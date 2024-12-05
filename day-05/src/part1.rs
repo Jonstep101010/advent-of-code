@@ -8,7 +8,7 @@ use itertools::Itertools;
 // 61 is correctly in the middle because 75 and 47 are before it (75|61 and 47|61) and 53 and 29 are after it (61|53 and 61|29).
 // 53 is correctly fourth because it is before page number 29 (53|29).
 // 29 is the only page left and so is correctly last.
-fn check_safe(rules: &Vec<(u32, u32)>, update: &Vec<u32>) -> Result<u32, ()> {
+fn check_safe(rules: &Vec<(u32, u32)>, update: &[u32]) -> Result<u32, ()> {
 	for numbers in update.iter().tuple_windows::<(_, _)>() {
 		let mut found = false;
 		for rule in rules {
