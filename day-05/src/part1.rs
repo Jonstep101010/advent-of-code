@@ -34,8 +34,7 @@ pub fn process(input: &str) -> miette::Result<String> {
 	for line in input.lines() {
 		if line.contains('|') {
 			let (left, right) = line
-				.split('|')
-				.next_tuple()
+				.split_once('|')
 				.map(|(l, r)| {
 					(
 						l.trim().parse::<u32>().unwrap(),
