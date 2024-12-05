@@ -44,6 +44,7 @@ fn check_safe(rules: &Vec<(u32, u32)>, update: &Vec<u32>) -> Result<u32, ()> {
 		}
 	}
 	// dbg!(update[update.len() / 2]);
+	// we always assume there is a middle page
 	Ok(update[update.len() / 2])
 }
 
@@ -66,18 +67,16 @@ pub fn process(input: &str) -> miette::Result<String> {
 			);
 		}
 	}
-	// dbg!(&rules);
-	// dbg!(&updates);
-	let mut middle_pages_sum = 0;
+	// let mut middle_pages_sum = 0;
 	let mut middle_pages_corrected = 0;
 	for update in updates {
-		// dbg!(&update);
 		match check_safe(&rules, &update) {
-			Ok(mid_val) => {
-				middle_pages_sum += mid_val;
+			Ok(_) => {
+				// do nothing
+				// middle_pages_sum += mid_val;
 			}
 			Err(_) => {
-				// do nothing
+				// should be infallible!
 				middle_pages_corrected += apply_rules(&rules, &update);
 			}
 		}
