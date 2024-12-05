@@ -27,8 +27,7 @@ fn check_safe(rules: &Vec<(u32, u32)>, update: &[u32]) -> Result<u32, ()> {
 	Ok(update[update.len() / 2])
 }
 
-#[tracing::instrument]
-pub fn process(input: &str) -> miette::Result<String> {
+fn parse(input: &str) -> (Vec<(u32, u32)>, Vec<Vec<u32>>) {
 	let mut rules = vec![];
 	let mut updates = vec![];
 	for line in input.lines() {
@@ -51,6 +50,12 @@ pub fn process(input: &str) -> miette::Result<String> {
 			);
 		}
 	}
+	(rules, updates)
+}
+
+#[tracing::instrument]
+pub fn process(input: &str) -> miette::Result<String> {
+	let (rules, updates) = parse(input);
 	// dbg!(&rules);
 	// dbg!(&updates);
 	let mut middle_pages_sum = 0;

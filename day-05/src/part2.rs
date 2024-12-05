@@ -1,3 +1,5 @@
+#![warn(clippy::pedantic)]
+
 // For each of the incorrectly-ordered updates, use the page ordering rules to put the page numbers in the right order.
 
 //     75,97,47,61,53 becomes 97,75,47,61,53.
@@ -31,10 +33,10 @@ use itertools::Itertools;
 // 53 is correctly fourth because it is before page number 29 (53|29).
 // 29 is the only page left and so is correctly last.
 fn check_safe(rules: &Vec<(u32, u32)>, update: &[u32]) -> Result<u32, ()> {
-	for numbers in update.iter().tuple_windows::<(_, _)>() {
+	for (&left, &right) in update.iter().tuple_windows::<(_, _)>() {
 		let mut found = false;
 		for rule in rules {
-			if rule.0 == *numbers.0 && rule.1 == *numbers.1 {
+			if rule.0 == left && rule.1 == right {
 				found = true;
 				break;
 			}
@@ -48,25 +50,35 @@ fn check_safe(rules: &Vec<(u32, u32)>, update: &[u32]) -> Result<u32, ()> {
 	Ok(update[update.len() / 2])
 }
 
-#[tracing::instrument]
-pub fn process(input: &str) -> miette::Result<String> {
+fn parse(input: &str) -> (Vec<(u32, u32)>, Vec<Vec<u32>>) {
 	let mut rules = vec![];
 	let mut updates = vec![];
 	for line in input.lines() {
-		if line.contains("|") {
-			let mut parts = line.split("|");
-			let left = parts.next().unwrap().trim().parse::<u32>().unwrap();
-			let right = parts.next().unwrap().trim().parse::<u32>().unwrap();
+		if line.contains('|') {
+			let (left, right) = line
+				.split_once('|')
+				.map(|(l, r)| {
+					(
+						l.trim().parse::<u32>().unwrap(),
+						r.trim().parse::<u32>().unwrap(),
+					)
+				})
+				.unwrap();
 			rules.push((left, right));
-		} else if line.contains(",") {
-			let parts = line.split(",");
+		} else if line.contains(',') {
 			updates.push(
-				parts
+				line.split(',')
 					.map(|x| x.trim().parse::<u32>().unwrap())
 					.collect_vec(),
 			);
 		}
 	}
+	(rules, updates)
+}
+
+#[tracing::instrument]
+pub fn process(input: &str) -> miette::Result<String> {
+	let (rules, updates) = parse(input);
 	// let mut middle_pages_sum = 0;
 	let mut middle_pages_corrected = 0;
 	for update in updates {
@@ -75,7 +87,7 @@ pub fn process(input: &str) -> miette::Result<String> {
 				// do nothing
 				// middle_pages_sum += mid_val;
 			}
-			Err(_) => {
+			Err(()) => {
 				// should be infallible!
 				middle_pages_corrected += apply_rules(&rules, &update);
 			}
