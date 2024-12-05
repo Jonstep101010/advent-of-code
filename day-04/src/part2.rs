@@ -21,6 +21,7 @@ pub fn process(input: &str) -> miette::Result<String> {
 	let grid: Vec<Vec<char>> = input.lines().map(|line| line.chars().collect()).collect();
 
 	// 4 possible combinations to look for
+	#[rustfmt::skip]
 	let patterns = vec![
 		vec![
 			vec!['M', '_', 'S'],
