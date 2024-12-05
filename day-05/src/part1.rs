@@ -1,3 +1,5 @@
+#![warn(clippy::pedantic)]
+
 use itertools::Itertools;
 
 // check single update
@@ -30,13 +32,13 @@ pub fn process(input: &str) -> miette::Result<String> {
 	let mut rules = vec![];
 	let mut updates = vec![];
 	for line in input.lines() {
-		if line.contains("|") {
-			let mut parts = line.split("|");
+		if line.contains('|') {
+			let mut parts = line.split('|');
 			let left = parts.next().unwrap().trim().parse::<u32>().unwrap();
 			let right = parts.next().unwrap().trim().parse::<u32>().unwrap();
 			rules.push((left, right));
-		} else if line.contains(",") {
-			let parts = line.split(",");
+		} else if line.contains(',') {
+			let parts = line.split(',');
 			updates.push(
 				parts
 					.map(|x| x.trim().parse::<u32>().unwrap())
@@ -49,13 +51,8 @@ pub fn process(input: &str) -> miette::Result<String> {
 	let mut middle_pages_sum = 0;
 	for update in updates {
 		// dbg!(&update);
-		match check_safe(&rules, &update) {
-			Ok(mid_val) => {
-				middle_pages_sum += mid_val;
-			}
-			Err(_) => {
-				// do nothing
-			}
+		if let Ok(mid_val) = check_safe(&rules, &update) {
+			middle_pages_sum += mid_val;
 		}
 	}
 	Ok(middle_pages_sum.to_string())
