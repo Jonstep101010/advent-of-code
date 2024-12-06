@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 fn find_start(grid: &[Vec<char>]) -> (usize, usize) {
 	for (y, row) in grid.iter().enumerate() {
 		for (x, &ch) in row.iter().enumerate() {
@@ -34,24 +36,25 @@ fn print_grid(grid: &Vec<Vec<char>>) {
 	}
 }
 
-fn traverse(grid: &[Vec<char>]) -> usize {
+const POSSIBLE_DIRECTIONS: [(i32, i32); 4] = [
+	(-1, 0), // up
+	(0, 1),  // right
+	(1, 0),  // down
+	(0, -1), // left
+];
+// traverse from part1
+fn get_path(grid: &[Vec<char>]) -> ((usize, usize), HashSet<(usize, usize, usize)>) {
 	let mut traversed = grid.to_owned();
-	let mut unique_positions = 1;
-	let mut already_passed = 0;
+	let mut unique_positions: HashSet<(/* turns */usize, usize, usize)> = HashSet::new();
 
 	// Start at ^ position (6,4)
 	let start_pos = find_start(grid);
 	let mut prev_position = start_pos;
+	unique_positions.insert((0, prev_position.0, prev_position.1));
 
-	let possible_directions = [
-		(-1, 0), // up
-		(0, 1),  // right
-		(1, 0),  // down
-		(0, -1), // left
-	];
 	let mut turns = 0;
 
-	let mut cur_direction = possible_directions[0];
+	let mut cur_direction = POSSIBLE_DIRECTIONS[0];
 
 	loop {
 		let (prev_y, prev_x) = prev_position;
@@ -65,9 +68,61 @@ fn traverse(grid: &[Vec<char>]) -> usize {
 		}
 
 		let next = grid[y][x];
+		if next == '#' {
+			// let mut next_directions = POSSIBLE_DIRECTIONS.clone();
+			match turns {
+				3 => {
+					turns = 0;
+				}
+				_ => {
+					turns += 1;
+				}
+			}
+			cur_direction = POSSIBLE_DIRECTIONS[turns];
+			let (ny, nx) = (
+				(prev_y as i32 + cur_direction.0) as usize,
+				(prev_x as i32 + cur_direction.1) as usize,
+			);
+			if ny >= grid.len() || nx >= grid[0].len() {
+				break;
+			}
+		} else {
+			if traversed[y][x] != 'X' && traversed[y][x] != '^' {
+				unique_positions.insert((turns, y, x));
+			}
+			traversed[y][x] = 'X';
+			prev_position = (y, x);
+		}
+	}
+	(start_pos, unique_positions)
+}
+
+// assert_eq!(path.get(&(0, start_pos.0, start_pos.1)).unwrap(), &(0 as usize, 6 as usize, 4 as usize));
+fn traverse(grid: &[Vec<char>]) -> usize {
+	let (start_pos, path) = get_path(grid);
+	let mut traversed = grid.to_owned();
+
+	// (dir/turns, y, x)
+	let mut already_passed: HashSet<(/* turns */usize, usize, usize)> = HashSet::new();
+	
+	let mut turns = 0;
+	let mut cur_direction = POSSIBLE_DIRECTIONS[0];
+	let mut cur_position = start_pos;
+	loop {
+		let (cur_y, cur_x) = cur_position;
+		let (y, x) = (
+			(cur_y as i32 + cur_direction.0) as usize,
+			(cur_x as i32 + cur_direction.1) as usize,
+		);
+
+		if y >= grid.len() || x >= grid[0].len() {
+			break;
+		}
+
+		let next = grid[y][x];
 		match next {
 			'#' => {
-				// let mut next_directions = possible_directions.clone();
+				// let mut next_directions = POSSIBLE_DIRECTIONS.clone();
 				match turns {
 					3 => {
 						turns = 0;
@@ -76,24 +131,24 @@ fn traverse(grid: &[Vec<char>]) -> usize {
 						turns += 1;
 					}
 				}
-				cur_direction = possible_directions[turns];
+				cur_direction = POSSIBLE_DIRECTIONS[turns];
 				let (ny, nx) = (
-					(prev_y as i32 + cur_direction.0) as usize,
-					(prev_x as i32 + cur_direction.1) as usize,
+					(cur_y as i32 + cur_direction.0) as usize,
+					(cur_x as i32 + cur_direction.1) as usize,
 				);
 				if ny >= grid.len() || nx >= grid[0].len() {
 					break;
 				}
-				if traversed[prev_y][prev_x] == '|' || traversed[prev_y][prev_x] == '-' {
-					traversed[prev_y][prev_x] = '+';
+				if traversed[cur_y][cur_x] == '|' || traversed[cur_y][cur_x] == '-' {
+					traversed[cur_y][cur_x] = '+';
 				}
 			}
 			_ => {
 				assert_ne!(traversed[y][x], 'X');
-				if traversed[y][x] != '|' && traversed[y][x] != '-' && traversed[y][x] != '^' {
+				if traversed[y][x] != '|' && traversed[y][x] != '-' && traversed[y][x] != '^' && traversed[y][x] != '+' {
 					unique_positions += 1;
 				} else {
-					already_passed += 1;
+					already_passed.insert((turns, y, x));
 				}
 				if traversed[y][x] != '^' {
 					traversed[y][x] = match cur_direction {
@@ -101,10 +156,9 @@ fn traverse(grid: &[Vec<char>]) -> usize {
 						(0, _) => '-',
 						_ => unreachable!(),
 					};
-				} else {
 				}
 
-				prev_position = (y, x);
+				cur_position = (y, x);
 			}
 		}
 		#[cfg(test)]
