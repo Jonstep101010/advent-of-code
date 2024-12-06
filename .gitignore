@@ -3,3 +3,4 @@ daily-template/
 **/target/
 .env
 **/task.md
+**/docs/*

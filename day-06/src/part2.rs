@@ -1,5 +1,14 @@
 use std::collections::HashSet;
 
+#[allow(dead_code)]
+const RED: &str = "\x1b[31m";
+const RESET: &str = "\x1b[0m";
+#[allow(dead_code)]
+// Helper function
+fn red(text: &str) -> String {
+	format!("{}{}{}", RED, text, RESET)
+}
+
 fn find_start(grid: &[Vec<char>]) -> (usize, usize) {
 	for (y, row) in grid.iter().enumerate() {
 		for (x, &ch) in row.iter().enumerate() {
@@ -9,14 +18,6 @@ fn find_start(grid: &[Vec<char>]) -> (usize, usize) {
 		}
 	}
 	panic!("No starting position found");
-}
-
-const RED: &str = "\x1b[31m";
-const RESET: &str = "\x1b[0m";
-
-// Helper function
-fn red(text: &str) -> String {
-	format!("{}{}{}", RED, text, RESET)
 }
 
 #[cfg(not(test))]
@@ -42,8 +43,9 @@ const POSSIBLE_DIRECTIONS: [(i32, i32); 4] = [
 	(1, 0),  // down
 	(0, -1), // left
 ];
+
 // traverse from part1
-fn get_path(grid: &[Vec<char>]) -> ((usize, usize), HashSet<(usize, usize, usize)>) {
+fn walk_path(grid: &[Vec<char>]) -> ((usize, usize), HashSet<(usize, usize, usize)>, Vec<Vec<char>>) {
 	let mut traversed = grid.to_owned();
 	let mut unique_positions: HashSet<(/* turns */ usize, usize, usize)> = HashSet::new();
 
@@ -116,93 +118,96 @@ fn get_path(grid: &[Vec<char>]) -> ((usize, usize), HashSet<(usize, usize, usize
 	}
 	#[cfg(test)]
 	{
-		for (turns, y, x) in &unique_positions {
-			eprintln!("{}", red(&format!("{} {} {}", turns, y, x)));
-		}
-		eprintln!("wall positions");
-		for (y, x) in &wall_positions {
-			eprintln!("{}", red(&format!("  {} {}", y, x)));
-		}
+		// for (turns, y, x) in &unique_positions {
+		// 	eprintln!("{}", red(&format!("{} {} {}", turns, y, x)));
+		// }
+		// eprintln!("wall positions");
+		// for (y, x) in &wall_positions {
+		// 	eprintln!("{}", red(&format!("  {} {}", y, x)));
+		// }
 		assert_eq!(41, unique_positions.len());
+		// lay path over the grid, check if it is correct
 	}
-	print_grid(&traversed);
-	(start_pos, unique_positions)
+	// print_grid(&traversed);
+	(start_pos, unique_positions, traversed)
 }
 
 // assert_eq!(path.get(&(0, start_pos.0, start_pos.1)).unwrap(), &(0 as usize, 6 as usize, 4 as usize));
+
+fn advance_from(cur_pos: (usize, usize, usize), grid: &Vec<Vec<char>>) -> (usize, usize) {
+	let (turns, y, x) = cur_pos;
+	let cur_direction = POSSIBLE_DIRECTIONS[turns];
+	let (ny, nx) = (
+		(y as i32 + cur_direction.0) as usize,
+		(x as i32 + cur_direction.1) as usize,
+	);
+	(ny, nx)
+}
+
+fn retreat_from(cur_pos: (usize, usize, usize), grid: &Vec<Vec<char>>) -> (usize, usize) {
+	let (turns, y, x) = cur_pos;
+	let cur_direction = POSSIBLE_DIRECTIONS[turns];
+	let (ny, nx) = (
+		(y as i32 - cur_direction.0) as usize,
+		(x as i32 - cur_direction.1) as usize,
+	);
+	(ny, nx)
+}
+
+///
+/// check for the path taken, what unique obstacles would cause a loop
 fn traverse(grid: &[Vec<char>]) -> usize {
-	let (start_pos, path) = get_path(grid);
-	let mut traversed = grid.to_owned();
-
+	let (start_pos, unique_positions, traversed) = walk_path(grid);
+	// we map the obstacles on the unique positions
+	// let mut obstacles_positions: HashSet<(usize, usize)> = HashSet::new();
+	let traversed = grid.to_owned();
+	dbg!(&unique_positions);
 	// (dir/turns, y, x)
-	let mut already_passed: HashSet<(/* turns */usize, usize, usize)> = HashSet::new();
-	
-	let mut turns = 0;
-	let mut cur_direction = POSSIBLE_DIRECTIONS[0];
-	let mut cur_position = start_pos;
+	// we need to reset it to the start position on each iteration
+	let mut obstacles_cause_loop: HashSet<(usize, usize)> = HashSet::new();
+	// we will brute force the path: check for all unique positions if placing an obstacle would cause a loop
+	let mut loop_check_items: HashSet<(/* turns */ usize, usize, usize)> = HashSet::new();
+	println!("traversed");
+	print_grid(&traversed);
+
 	loop {
-		let (cur_y, cur_x) = cur_position;
-		let (y, x) = (
-			(cur_y as i32 + cur_direction.0) as usize,
-			(cur_x as i32 + cur_direction.1) as usize,
-		);
-
-		if y >= grid.len() || x >= grid[0].len() {
-			break;
-		}
-
-		let next = grid[y][x];
-		match next {
-			'#' => {
-				// let mut next_directions = POSSIBLE_DIRECTIONS.clone();
-				match turns {
-					3 => {
-						turns = 0;
-					}
-					_ => {
-						turns += 1;
-					}
-				}
-				cur_direction = POSSIBLE_DIRECTIONS[turns];
-				let (ny, nx) = (
-					(cur_y as i32 + cur_direction.0) as usize,
-					(cur_x as i32 + cur_direction.1) as usize,
-				);
+		for (turns, y, x) in &unique_positions {
+			// we need to reset it to the start position on each iteration
+			// we will brute force the path: check for all unique positions if placing an obstacle would cause a loop
+			let mut loop_check_items: HashSet<(/* turns */ usize, usize, usize)> = HashSet::new();
+			loop_check_items.insert((*turns, *y, *x));
+			// we will place an obstacle on the current position
+			// we will check if the path is still traversable
+			// if it is not, we will add it to the obstacles_cause_loop
+			let (ny, nx) = advance_from((*turns, *y, *x), &traversed);
+			if ny >= grid.len() || nx >= grid[0].len() {
+				continue;
+			}
+			// check if placing an obstacle would cause a loop
+			// we will check if the path is still traversable
+			// if it is not, we will add it to the obstacles_cause_loop
+			let mut cur_pos = (*turns, *y, *x);
+			loop {
+				let (ny, nx) = advance_from(cur_pos, &traversed);
 				if ny >= grid.len() || nx >= grid[0].len() {
 					break;
 				}
-				if traversed[cur_y][cur_x] == '|' || traversed[cur_y][cur_x] == '-' {
-					traversed[cur_y][cur_x] = '+';
+				if traversed[ny][nx] == '+' {
+					break;
 				}
-			}
-			_ => {
-				assert_ne!(traversed[y][x], 'X');
-				if traversed[y][x] != '|' && traversed[y][x] != '-' && traversed[y][x] != '^' && traversed[y][x] != '+' {
-					unique_positions += 1;
-				} else {
-					already_passed.insert((turns, y, x));
+				if traversed[ny][nx] == '|' || traversed[ny][nx] == '-' {
+					cur_pos = (cur_pos.0, ny, nx);
+					continue;
 				}
-				if traversed[y][x] != '^' {
-					traversed[y][x] = match cur_direction {
-						(_, 0) => '|',
-						(0, _) => '-',
-						_ => unreachable!(),
-					};
-				}
+				// we need to check 
+				let mut grid_with_obstacle = traversed.clone();
+				grid_with_obstacle[ny][nx] = '#';
+				// check if it runs a certain amount of time (it might never end)
+				let (start_pos, unique_positions, traversed) = walk_path(&grid_with_obstacle);
 
-				cur_position = (y, x);
 			}
 		}
-		#[cfg(test)]
-		{
-			print_grid(&traversed);
-		}
 	}
-	#[cfg(test)]
-	{
-		print_grid(&traversed);
-	}
-	unique_positions
 }
 
 #[tracing::instrument]
