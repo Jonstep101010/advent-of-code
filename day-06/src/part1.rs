@@ -1,4 +1,4 @@
-fn find_start(grid: &Vec<Vec<char>>) -> (usize, usize) {
+fn find_start(grid: &[Vec<char>]) -> (usize, usize) {
 	for (y, row) in grid.iter().enumerate() {
 		for (x, &ch) in row.iter().enumerate() {
 			if ch == '^' {
@@ -17,23 +17,20 @@ fn print_grid(grid: &Vec<Vec<char>>) {
 	}
 }
 
-fn traverse(grid: &Vec<Vec<char>>) -> usize {
-	let mut traversed = grid.clone();
+fn traverse(grid: &[Vec<char>]) -> usize {
+	let mut traversed = grid.to_owned();
 	let mut unique_positions = 1;
 
 	// Start at ^ position (6,4)
 	let mut prev_position = find_start(grid);
 
-	let possible_directions = vec![
+	let possible_directions = [
 		(-1, 0), // up
 		(0, 1),  // right
 		(1, 0),  // down
 		(0, -1), // left
 	];
 	let mut turns = 0;
-
-	let mut cur_direction = possible_directions[turns]; // Start going up
-	// traversed[prev_position.0][prev_position.1] = 'X';
 
 	let mut cur_direction = possible_directions[0];
 
@@ -48,7 +45,7 @@ fn traverse(grid: &Vec<Vec<char>>) -> usize {
 			break;
 		}
 
-		let mut next = grid[y][x];
+		let next = grid[y][x];
 		if next == '#' {
 			// let mut next_directions = possible_directions.clone();
 			match turns {
