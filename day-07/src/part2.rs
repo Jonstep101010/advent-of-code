@@ -21,35 +21,31 @@ const OPERATORS: [char; 3] = ['*', '+', '|'];
 #[tracing::instrument]
 pub fn process(input: &str) -> miette::Result<String> {
 	let (_input, equations) = parse(input).map_err(|err| miette!("failed to parse {}", err))?;
-	// dbg!(&equations);
 
-	println!(" - - - ");
-
+	// for explanations see part1
 	let total_sum: u64 = equations
-		.into_iter()
+		.iter()
 		.filter_map(|(possible_result, numbers)| {
-			// all stuff here
-			// get number of operators(numbers), operators(constants)
-			let num_operators = numbers.len() - 1;
-			(0..num_operators)
-				.map(|_ /*ignore - we always need operators*/| OPERATORS)
-				/* https://docs.rs/itertools/latest/itertools/trait.Itertools.html#method.multi_cartesian_product */
-				.multi_cartesian_product() /* get any/all items, as we need to check if they can be valid */
-				.any(|sequence_output| {/* todo: refactor (take closure for now) can_produce_result()*/
+			(0..numbers.len() - 1) // for (operator count)
+				.map(|_| OPERATORS)
+				.multi_cartesian_product()
+				.any(|sequence_output| {
 					let mut s = sequence_output.iter();
-					/* iterate over, reduce by applying op: https://doc.rust-lang.org/stable/std/iter/trait.Iterator.html#method.reduce */
-					possible_result == numbers.iter().copied().reduce(|lhs_acc/* first, second */, rhs_elem/* second*/| {
-						match s.next().unwrap() {
-							'*' => lhs_acc * rhs_elem,
-							'+' => lhs_acc + rhs_elem,
-							'|' => {format!("{lhs_acc}{rhs_elem}").parse::<u64>().unwrap()}
-							_ => panic!("invalid operation")
-						}
-					}).unwrap()
+					let current_result = numbers
+						.iter()
+						.copied()
+						.reduce(|current, next| match s.next().unwrap() {
+							'*' => current * next,
+							'+' => current + next,
+							'|' => format!("{current}{next}").parse::<u64>().unwrap(),
+							_ => panic!("invalid operation"),
+						})
+						.unwrap();
+					*possible_result == current_result
 				})
 				.then_some(possible_result)
 		})
-		.sum(); // we want to get all numbers
+		.sum();
 	Ok(total_sum.to_string())
 }
 
