@@ -46,55 +46,69 @@ const POSSIBLE_DIRECTIONS: [(i32, i32); 4] = [
 	(0, -1), // left
 ];
 
-const MAX_ITERATIONS: usize = 10000;
+fn check_infinite_loop(start_pos: (usize, usize), grid: &[Vec<char>]) -> bool {
+	let mut visited_states: HashSet<((usize, usize), usize)> = HashSet::new();
+	let mut prev_position = start_pos;
+	let mut turns = 0;
+	let mut cur_direction = POSSIBLE_DIRECTIONS[turns];
 
-fn walk_path(
-	grid: &[Vec<char>],
-) -> (
-	(usize, usize),
-	HashSet<(usize, usize, usize)>,
-	Vec<Vec<char>>,
-	bool,
-) {
+	loop {
+		let (prev_y, prev_x) = prev_position;
+		let (y, x) = (
+			(prev_y as i32 + cur_direction.0) as usize,
+			(prev_x as i32 + cur_direction.1) as usize,
+		);
+
+		if y >= grid.len() || x >= grid[0].len() {
+			return false;
+		}
+
+		let state = ((y, x), turns);
+		if !visited_states.insert(state) {
+			return true;
+		}
+
+		let next = grid[y][x];
+		if next == '#' || next == '0' {
+			turns = if turns == 3 { 0 } else { turns + 1 };
+			cur_direction = POSSIBLE_DIRECTIONS[turns];
+
+			// Check next position validity
+			let (ny, nx) = (
+				(prev_y as i32 + cur_direction.0) as usize,
+				(prev_x as i32 + cur_direction.1) as usize,
+			);
+			if ny >= grid.len() || nx >= grid[0].len() {
+				return false;
+			}
+		} else {
+			prev_position = (y, x);
+		}
+	}
+}
+
+fn walk_path(grid: &[Vec<char>]) -> ((usize, usize), HashSet<(usize, usize, usize)>) {
 	let mut traversed = grid.to_owned();
 	let mut unique_positions: HashSet<(/* turns */ usize, usize, usize)> = HashSet::new();
 
 	// Start at ^ position (6,4)
 	let start_pos = find_start(grid);
 	let mut prev_position = start_pos;
-	let mut visited_states: HashSet<(usize, usize, usize)> = HashSet::new(); // Track (turns, y, x)
 	unique_positions.insert((0, prev_position.0, prev_position.1));
 	let mut wall_positions: HashSet<(usize, usize)> = HashSet::new();
 	let mut turns = 0;
-	let mut is_loop = false;
 
 	let mut cur_direction = POSSIBLE_DIRECTIONS[0];
-	let mut iterations = 0;
-
 	loop {
-		iterations += 1;
-		if iterations > MAX_ITERATIONS {
-			// escape hatch
-			is_loop = true;
-			break;
-		}
-
 		let (prev_y, prev_x) = prev_position;
 		let (y, x) = (
 			(prev_y as i32 + cur_direction.0) as usize,
 			(prev_x as i32 + cur_direction.1) as usize,
 		);
 		// Check for loop
-		let state = (turns, y, x);
 		if y >= grid.len() || x >= grid[0].len() {
 			break;
 		}
-		if !visited_states.insert(state) {
-			// We've seen this state before - we're in a loop
-			is_loop = true;
-			break;
-		}
-
 		let next = grid[y][x];
 		if next == '#' || next == '0' {
 			// let mut next_directions = POSSIBLE_DIRECTIONS.clone();
@@ -144,13 +158,13 @@ fn walk_path(
 			prev_position = (y, x);
 		}
 	}
-	(start_pos, visited_states, traversed, is_loop)
+	(start_pos, unique_positions)
 }
 
 ///
 /// check for the path taken, what unique obstacles would cause a loop
 fn traverse(grid: &[Vec<char>]) -> usize {
-	let (start_pos, unique_positions, _, _) = walk_path(grid);
+	let (start_pos, unique_positions) = walk_path(grid);
 	// we map the obstacles on the unique positions
 	// we need to reset it to the start position on each iteration
 	let mut obstacles_cause_loop: HashSet<(usize, usize)> = HashSet::new();
@@ -165,8 +179,7 @@ fn traverse(grid: &[Vec<char>]) -> usize {
 		if (ny, nx) != start_pos {
 			grid_with_obstacle[ny][nx] = '0';
 			// check if it runs a certain amount of time (it might never end)
-			let (_, _, _, is_loop) = walk_path(&grid_with_obstacle);
-			if is_loop {
+			if check_infinite_loop(start_pos, &grid_with_obstacle) {
 				// eprintln!("obstacle causes loop");
 				// print_grid(&grid_with_obstacle);
 				obstacles_cause_loop.insert((ny, nx));
@@ -202,7 +215,7 @@ mod tests {
 		Ok(())
 	}
 	#[test]
-	fn test_walk_path_contains_loop() {
+	fn test_check_infinite_loop() {
 		let input = "....#.....
 .........#
 ..........
@@ -214,6 +227,7 @@ mod tests {
 #.........
 ......#...";
 		let grid: Vec<Vec<char>> = input.lines().map(|line| line.chars().collect()).collect();
-		assert_eq!(true, walk_path(&grid).3);
+		let start_pos = (6, 4);
+		assert_eq!(true, check_infinite_loop(start_pos, &grid));
 	}
 }
