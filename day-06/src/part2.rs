@@ -48,7 +48,6 @@ const POSSIBLE_DIRECTIONS: [(i32, i32); 4] = [
 
 const MAX_ITERATIONS: usize = 10000;
 
-// traverse from part1
 fn walk_path(
 	grid: &[Vec<char>],
 ) -> (
@@ -75,6 +74,7 @@ fn walk_path(
 	loop {
 		iterations += 1;
 		if iterations > MAX_ITERATIONS {
+			// escape hatch
 			is_loop = true;
 			break;
 		}
@@ -144,55 +144,21 @@ fn walk_path(
 			prev_position = (y, x);
 		}
 	}
-	// print_grid(&traversed);
 	(start_pos, visited_states, traversed, is_loop)
 }
-
-// fn advance_from(cur_pos: (usize, usize, usize), grid: &[Vec<char>]) -> (usize, usize) {
-// 	let (turns, y, x) = cur_pos;
-// 	let cur_direction = POSSIBLE_DIRECTIONS[turns];
-// 	let (ny, nx) = (
-// 		(y as i32 + cur_direction.0) as usize,
-// 		(x as i32 + cur_direction.1) as usize,
-// 	);
-// 	(ny, nx)
-// }
-
-// fn retreat_from(cur_pos: (usize, usize, usize), grid: &[Vec<char>]) -> (usize, usize) {
-// 	let (turns, y, x) = cur_pos;
-// 	let cur_direction = POSSIBLE_DIRECTIONS[turns];
-// 	let (ny, nx) = (
-// 		(y as i32 - cur_direction.0) as usize,
-// 		(x as i32 - cur_direction.1) as usize,
-// 	);
-// 	(ny, nx)
-// }
 
 ///
 /// check for the path taken, what unique obstacles would cause a loop
 fn traverse(grid: &[Vec<char>]) -> usize {
 	let (start_pos, unique_positions, _, _) = walk_path(grid);
 	// we map the obstacles on the unique positions
-	// let mut obstacles_positions: HashSet<(usize, usize)> = HashSet::new();
-	// let traversed = grid.to_owned();
-	// dbg!(&unique_positions);
-	// (dir/turns, y, x)
 	// we need to reset it to the start position on each iteration
 	let mut obstacles_cause_loop: HashSet<(usize, usize)> = HashSet::new();
 	// we will brute force the path: check for all unique positions if placing an obstacle would cause a loop
-	// let mut loop_check_items: HashSet<(/* turns */ usize, usize, usize)> = HashSet::new();
-	// println!("traversed");
-	// print_grid(&traversed);
 
 	for (turns, y, x) in &unique_positions {
-		// we need to reset it to the start position on each iteration
-		// we will brute force the path: check for all unique positions if placing an obstacle would cause a loop
 		let mut loop_check_items: HashSet<(/* turns */ usize, usize, usize)> = HashSet::new();
 		loop_check_items.insert((*turns, *y, *x));
-		// we will place an obstacle on the current position
-		// we will check if the path is still traversable
-		// if it is not, we will add it to the obstacles_cause_loop
-		// let (ny, nx) = advance_from((*turns, *y, *x), &traversed);
 		let (ny, nx) = (*y, *x);
 		// check if placing an obstacle would cause a loop by checking if the path is still traversable
 		let mut grid_with_obstacle: Vec<Vec<char>> = grid.to_vec();
@@ -213,7 +179,6 @@ fn traverse(grid: &[Vec<char>]) -> usize {
 #[tracing::instrument]
 pub fn process(input: &str) -> miette::Result<String> {
 	let grid: Vec<Vec<char>> = input.lines().map(|line| line.chars().collect()).collect();
-	// assert_eq!((6, 4), find_start(&grid));
 	Ok(traverse(&grid).to_string())
 }
 
