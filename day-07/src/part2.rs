@@ -16,7 +16,7 @@ fn parse(input: &str) -> nom::IResult<&str, Vec<(u64, Vec<u64>)>> {
 	)(input)
 }
 
-const OPERATORS: [char; 2] = ['*', '+'];
+const OPERATORS: [char; 3] = ['*', '+', '|'];
 
 #[tracing::instrument]
 pub fn process(input: &str) -> miette::Result<String> {
@@ -42,6 +42,7 @@ pub fn process(input: &str) -> miette::Result<String> {
 						match s.next().unwrap() {
 							'*' => lhs_acc * rhs_elem,
 							'+' => lhs_acc + rhs_elem,
+							'|' => {format!("{lhs_acc}{rhs_elem}").parse::<u64>().unwrap()}
 							_ => panic!("invalid operation")
 						}
 					}).unwrap()
