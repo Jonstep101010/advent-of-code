@@ -31,14 +31,22 @@ pub fn process(input: &str) -> miette::Result<String> {
 			// all stuff here
 			// get number of operators(numbers), operators(constants)
 			let num_operators = numbers.len() - 1;
-			for sequence in (0..num_operators)
+			(0..num_operators)
 				.map(|_ /*ignore - we always need operators*/| OPERATORS)
-				.multi_cartesian_product()
-			{
-				dbg!(sequence);
-			}
-			dbg!(num_operators);
-			Some(possible_result)
+				/* https://docs.rs/itertools/latest/itertools/trait.Itertools.html#method.multi_cartesian_product */
+				.multi_cartesian_product() /* get any/all items, as we need to check if they can be valid */
+				.any(|sequence_output| {/* todo: refactor (take closure for now) can_produce_result()*/
+					let mut s = sequence_output.iter();
+					/* iterate over, reduce by applying op: https://doc.rust-lang.org/stable/std/iter/trait.Iterator.html#method.reduce */
+					possible_result == numbers.iter().reduce(|lhs_acc/* first, second */, rhs_elem/* second*/| {
+						match s.next().unwrap() {
+							'*' => lhs_acc * rhs_elem,
+							'+' => lhs_acc + rhs_elem,
+							_ => panic!("invalid operation")
+						}
+					}).unwrap()
+				})
+				.then_some(possible_result)
 		})
 		.sum(); // we want to get all numbers
 	Ok(total_sum.to_string())
