@@ -38,7 +38,7 @@ pub fn process(input: &str) -> miette::Result<String> {
 				.any(|sequence_output| {/* todo: refactor (take closure for now) can_produce_result()*/
 					let mut s = sequence_output.iter();
 					/* iterate over, reduce by applying op: https://doc.rust-lang.org/stable/std/iter/trait.Iterator.html#method.reduce */
-					possible_result == numbers.iter().reduce(|lhs_acc/* first, second */, rhs_elem/* second*/| {
+					possible_result == numbers.iter().copied().reduce(|lhs_acc/* first, second */, rhs_elem/* second*/| {
 						match s.next().unwrap() {
 							'*' => lhs_acc * rhs_elem,
 							'+' => lhs_acc + rhs_elem,
