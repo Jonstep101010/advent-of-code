@@ -87,6 +87,7 @@ fn check_infinite_loop(start_pos: (usize, usize), grid: &[Vec<char>]) -> bool {
 	}
 }
 
+#[allow(clippy::type_complexity)]
 fn walk_path(grid: &[Vec<char>]) -> ((usize, usize), HashSet<(usize, usize, usize)>) {
 	let mut traversed = grid.to_owned();
 	let mut unique_positions: HashSet<(/* turns */ usize, usize, usize)> = HashSet::new();
@@ -166,23 +167,15 @@ fn walk_path(grid: &[Vec<char>]) -> ((usize, usize), HashSet<(usize, usize, usiz
 fn traverse(grid: &[Vec<char>]) -> usize {
 	let (start_pos, unique_positions) = walk_path(grid);
 	// we map the obstacles on the unique positions
-	// we need to reset it to the start position on each iteration
+	// we need to reset it to the start position on each iteration, passing start_pos to check.
 	let mut obstacles_cause_loop: HashSet<(usize, usize)> = HashSet::new();
 	// we will brute force the path: check for all unique positions if placing an obstacle would cause a loop
-
-	for (turns, y, x) in &unique_positions {
-		let mut loop_check_items: HashSet<(/* turns */ usize, usize, usize)> = HashSet::new();
-		loop_check_items.insert((*turns, *y, *x));
-		let (ny, nx) = (*y, *x);
-		// check if placing an obstacle would cause a loop by checking if the path is still traversable
-		let mut grid_with_obstacle: Vec<Vec<char>> = grid.to_vec();
-		if (ny, nx) != start_pos {
-			grid_with_obstacle[ny][nx] = '0';
-			// check if it runs a certain amount of time (it might never end)
+	for (_, y, x) in unique_positions {
+		if (y, x) != start_pos {
+			let mut grid_with_obstacle: Vec<Vec<char>> = grid.to_vec();
+			grid_with_obstacle[y][x] = '0';
 			if check_infinite_loop(start_pos, &grid_with_obstacle) {
-				// eprintln!("obstacle causes loop");
-				// print_grid(&grid_with_obstacle);
-				obstacles_cause_loop.insert((ny, nx));
+				obstacles_cause_loop.insert((y, x));
 			}
 		}
 	}
