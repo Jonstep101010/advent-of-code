@@ -17,6 +17,7 @@ fn parse(input: &str) -> nom::IResult<&str, Vec<(u64, Vec<u64>)>> {
 }
 
 const OPERATORS: [char; 3] = ['*', '+', '|'];
+use rayon::prelude::*;
 
 #[tracing::instrument]
 pub fn process(input: &str) -> miette::Result<String> {
@@ -24,7 +25,7 @@ pub fn process(input: &str) -> miette::Result<String> {
 
 	// for explanations see part1
 	let total_sum: u64 = equations
-		.iter()
+		.par_iter()
 		.filter_map(|(possible_result, numbers)| {
 			(0..numbers.len() - 1) // for (operator count)
 				.map(|_| OPERATORS)

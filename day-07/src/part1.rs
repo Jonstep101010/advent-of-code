@@ -17,19 +17,15 @@ fn parse(input: &str) -> nom::IResult<&str, Vec<(u64, Vec<u64>)>> {
 }
 
 const OPERATORS: [char; 2] = ['*', '+'];
+use rayon::prelude::*;
 
 #[tracing::instrument]
 pub fn process(input: &str) -> miette::Result<String> {
 	let (_input, equations) = parse(input).map_err(|err| miette!("failed to parse {}", err))?;
-	// dbg!(&equations);
-
-	println!(" - - - ");
 
 	let total_sum: u64 = equations
-		.into_iter()
+		.par_iter()
 		.filter_map(|(possible_result, numbers)| {
-			// all stuff here
-			// get number of operators(numbers), operators(constants)
 			let num_operators = numbers.len() - 1;
 			(0..num_operators)
 				.map(|_ /*ignore - we always need operators*/| OPERATORS)
@@ -38,7 +34,7 @@ pub fn process(input: &str) -> miette::Result<String> {
 				.any(|sequence_output| {/* todo: refactor (take closure for now) can_produce_result()*/
 					let mut s = sequence_output.iter();
 					/* iterate over, reduce by applying op: https://doc.rust-lang.org/stable/std/iter/trait.Iterator.html#method.reduce */
-					possible_result == numbers.iter().copied().reduce(|lhs_acc/* first, second */, rhs_elem/* second*/| {
+					*possible_result == numbers.iter().copied().reduce(|lhs_acc/* first, second */, rhs_elem/* second*/| {
 						match s.next().unwrap() {
 							'*' => lhs_acc * rhs_elem,
 							'+' => lhs_acc + rhs_elem,
