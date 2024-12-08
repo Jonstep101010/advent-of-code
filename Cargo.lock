@@ -209,6 +209,7 @@ dependencies = [
  "itertools",
  "miette",
  "nom",
+ "rayon",
  "rstest",
  "test-log",
  "tracing",

@@ -152,7 +152,7 @@ fn walk_path(grid: &[Vec<char>]) -> ((usize, usize), HashSet<(usize, usize, usiz
 	}
 	(start_pos, unique_positions)
 }
-
+use rayon::prelude::*;
 ///
 /// check for the path taken, what unique obstacles would cause a loop
 fn traverse(grid: &[Vec<char>]) -> usize {
@@ -160,11 +160,11 @@ fn traverse(grid: &[Vec<char>]) -> usize {
 	// we map the obstacles on the unique positions
 	// we need to reset it to the start position on each iteration, passing start_pos to check.
 	let obstacles_cause_loop: HashSet<_> = unique_positions
-		.into_iter()
+		.par_iter()
 		.filter(|(_, y, x)| ((*y, *x) != start_pos))
 		.filter_map(|(_, y, x)| {
 			let mut grid_with_obstacle = grid.to_vec();
-			grid_with_obstacle[y][x] = '0';
+			grid_with_obstacle[*y][*x] = '0';
 			check_infinite_loop(start_pos, &grid_with_obstacle).then_some((y, x))
 		})
 		.collect();
