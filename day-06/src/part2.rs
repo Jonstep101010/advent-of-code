@@ -1,14 +1,5 @@
 use std::collections::HashSet;
 
-#[allow(dead_code)]
-const RED: &str = "\x1b[31m";
-const RESET: &str = "\x1b[0m";
-#[allow(dead_code)]
-// Helper function
-fn red(text: &str) -> String {
-	format!("{}{}{}", RED, text, RESET)
-}
-
 fn find_start(grid: &[Vec<char>]) -> (usize, usize) {
 	for (y, row) in grid.iter().enumerate() {
 		for (x, &ch) in row.iter().enumerate() {
@@ -168,17 +159,15 @@ fn traverse(grid: &[Vec<char>]) -> usize {
 	let (start_pos, unique_positions) = walk_path(grid);
 	// we map the obstacles on the unique positions
 	// we need to reset it to the start position on each iteration, passing start_pos to check.
-	let mut obstacles_cause_loop: HashSet<(usize, usize)> = HashSet::new();
-	// we will brute force the path: check for all unique positions if placing an obstacle would cause a loop
-	for (_, y, x) in unique_positions {
-		if (y, x) != start_pos {
-			let mut grid_with_obstacle: Vec<Vec<char>> = grid.to_vec();
+	let obstacles_cause_loop: HashSet<_> = unique_positions
+		.into_iter()
+		.filter(|(_, y, x)| ((*y, *x) != start_pos))
+		.filter_map(|(_, y, x)| {
+			let mut grid_with_obstacle = grid.to_vec();
 			grid_with_obstacle[y][x] = '0';
-			if check_infinite_loop(start_pos, &grid_with_obstacle) {
-				obstacles_cause_loop.insert((y, x));
-			}
-		}
-	}
+			check_infinite_loop(start_pos, &grid_with_obstacle).then_some((y, x))
+		})
+		.collect();
 	obstacles_cause_loop.len()
 }
 
