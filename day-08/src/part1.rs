@@ -41,7 +41,7 @@ pub fn process(input: &str) -> miette::Result<String> {
 	let antinode_positions = parsing_result
 		.chunk_by(|a, b| a.1 == b.1)
 		.into_iter()
-		.map(|chunk| {
+		.flat_map(|chunk| {
 			dbg!(chunk[0]);
 			itertools::Itertools::combinations(chunk.iter(), 2)
 				.flat_map(|antennas| {
@@ -56,12 +56,11 @@ pub fn process(input: &str) -> miette::Result<String> {
 				.inspect(|v| {
 					dbg!(v);
 				})
-				.unique()
-				.count()
 		})
-		.collect::<Vec<usize>>();
+		.unique()
+		.count();
 	// dbg!(&parsing_result);
-	Ok(antinode_positions.len().to_string())
+	Ok(antinode_positions.to_string())
 }
 
 #[cfg(test)]
