@@ -1,4 +1,4 @@
-fn get_checksum(compressed_disk: &Vec<i64>) -> i64 {
+fn get_checksum(compressed_disk: &[i64]) -> i64 {
 	compressed_disk
 		.iter()
 		.enumerate()
@@ -9,7 +9,7 @@ fn get_checksum(compressed_disk: &Vec<i64>) -> i64 {
 fn parse_disk(input: &str) -> (Vec<i64>, Vec<usize>) {
 	let mut disk: Vec<i64> = Vec::new();
 	let mut file_id: i64 = 0;
-	for (i, c) in input.chars().enumerate() {
+	for (i, c) in input.trim().chars().enumerate() {
 		let x = c.to_digit(10).expect("Invalid digit") as usize;
 		if i % 2 == 0 {
 			// Append `x` copies of `fid` to `disk`
@@ -31,7 +31,7 @@ fn parse_disk(input: &str) -> (Vec<i64>, Vec<usize>) {
 
 fn compress(disk: &mut Vec<i64>, free_spaces: Vec<usize>) -> &Vec<i64> {
 	// For each free index, replace with the last non-`-1` element
-	for &i in &free_spaces {
+	for i in free_spaces {
 		// Remove trailing `-1`s
 		while disk.last() == Some(&-1) {
 			disk.pop();
@@ -42,15 +42,14 @@ fn compress(disk: &mut Vec<i64>, free_spaces: Vec<usize>) -> &Vec<i64> {
 		// Replace the free space with last element
 		disk[i] = disk.pop().expect("Disk is empty");
 	}
-	let compressed_disk = disk;
-	compressed_disk
+	disk
 }
 
 #[tracing::instrument]
 pub fn process(input: &str) -> miette::Result<String> {
 	let (mut disk, free_spaces) = parse_disk(input);
 	let compressed_disk = compress(&mut disk, free_spaces);
-	let checksum: i64 = get_checksum(&compressed_disk);
+	let checksum: i64 = get_checksum(compressed_disk);
 	Ok(checksum.to_string())
 }
 
