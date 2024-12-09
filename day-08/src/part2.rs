@@ -45,7 +45,7 @@ pub fn process(input: &str) -> miette::Result<String> {
 				.flat_map(|antennas| {
 					// antennas: combination of 2 points of same type (same char & case/num)
 					let diff = antennas[0].0 - antennas[1].0;
-					let first: Vec<_> = std::iter::successors(Some(antennas[0].0), |position| {
+					[std::iter::successors(Some(antennas[0].0), |position| {
 						let new_position = position + diff;
 						if bound_horizontal.contains(&position.x)
 							&& bound_vertical.contains(&position.y)
@@ -55,8 +55,7 @@ pub fn process(input: &str) -> miette::Result<String> {
 							None
 						}
 					})
-					.collect();
-					let second: Vec<_> = std::iter::successors(Some(antennas[1].0), |position| {
+					.chain(std::iter::successors(Some(antennas[1].0), |position| {
 						let new_position = position - diff;
 						if bound_horizontal.contains(&position.x)
 							&& bound_vertical.contains(&position.y)
@@ -65,9 +64,8 @@ pub fn process(input: &str) -> miette::Result<String> {
 						} else {
 							None
 						}
-					})
-					.collect();
-					[first, second]
+					}))
+					.collect::<Vec<_>>()]
 				})
 				.flatten()
 				.filter(|position| {
