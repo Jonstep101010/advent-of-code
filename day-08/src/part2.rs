@@ -2,7 +2,7 @@ use glam::IVec2;
 use itertools::Itertools;
 use miette::miette;
 use nom::{
-	AsChar, IResult, bytes::complete::take_till, character::complete::satisfy, multi::many1,
+	IResult, bytes::complete::take_till, character::complete::satisfy, multi::many1,
 	sequence::preceded,
 };
 use nom_locate::{LocatedSpan, position};
@@ -15,7 +15,9 @@ fn alphanum_position(input: Span) -> IResult<Span, (IVec2, char)> {
 		position.get_column() as i32 - 1,
 		position.location_line() as i32 - 1,
 	);
-	let (input, c) = satisfy(|c| c.is_alphanum())(input)?;
+	let (input, c) = satisfy(
+		nom::AsChar::is_alphanum, /* same as |c| c.is_alphanum() */
+	)(input)?;
 	Ok((input, (IVec2::new(x, y), c)))
 }
 
@@ -29,48 +31,39 @@ fn parse(input: Span) -> IResult<Span, Vec<(IVec2, char)>> {
 
 #[tracing::instrument]
 pub fn process(input: &str) -> miette::Result<String> {
-	let height = input.lines().count();
-	let width = input.lines().next().unwrap().len();
-	let (bound_horizontal, bound_vertical) = (0..width as i32, 0..height as i32);
+	let (range_x, range_y) = (
+		0..input.lines().next().unwrap().len() as i32, //width
+		0..input.lines().count() as i32,               //height
+	);
 
-	let (_input, mut parsing_result) =
-		parse(Span::new(input)).map_err(|err| miette!("failed to parse: {}", err))?;
-	parsing_result.sort_by(|a, b| a.1.cmp(&b.1));
-	// we want to get in a row the same frequencies,
-	// check for each of them their diff and possible resulting antinodes
-	let antinode_count = parsing_result
-		.chunk_by(|a, b| a.1 == b.1)
+	let (_input, all_antennas_by_freq) = parse(Span::new(input))
+		.map(|(_input, mut parsing_result)| {
+			parsing_result.sort_by(|(_, freq_a), (_, freq_b)| freq_a.cmp(freq_b));
+			(_input, parsing_result)
+		})
+		.map_err(|err| miette!("failed to parse: {}", err))?;
+
+	let antinode_count = all_antennas_by_freq
+		.chunk_by(|(_, freq_a), (_, freq_b)| freq_a == freq_b)
 		.flat_map(|chunk| {
 			itertools::Itertools::combinations(chunk.iter(), 2)
-				.flat_map(|antennas| {
-					// antennas: combination of 2 points of same type (same char & case/num)
-					let diff = antennas[0].0 - antennas[1].0;
-					[std::iter::successors(Some(antennas[0].0), |position| {
+				.flat_map(|antennas: Vec<&(IVec2, char)>| {
+					let (pa, pb) = (antennas[0].0, antennas[1].0);
+					let diff = pa - pb;
+					[std::iter::successors(Some(pa), |position: &IVec2| {
 						let new_position = position + diff;
-						if bound_horizontal.contains(&position.x)
-							&& bound_vertical.contains(&position.y)
-						{
-							Some(new_position)
-						} else {
-							None
-						}
+						(range_x.contains(&position.x) && range_y.contains(&position.y))
+							.then_some(new_position)
 					})
-					.chain(std::iter::successors(Some(antennas[1].0), |position| {
+					.chain(std::iter::successors(Some(pb), |position: &IVec2| {
 						let new_position = position - diff;
-						if bound_horizontal.contains(&position.x)
-							&& bound_vertical.contains(&position.y)
-						{
-							Some(new_position)
-						} else {
-							None
-						}
+						(range_x.contains(&position.x) && range_y.contains(&position.y))
+							.then_some(new_position)
 					}))
 					.collect::<Vec<_>>()]
 				})
 				.flatten()
-				.filter(|position| {
-					bound_horizontal.contains(&position.x) && bound_vertical.contains(&position.y)
-				}) //.inspect(|v| {dbg!(v);})
+				.filter(|position| range_x.contains(&position.x) && range_y.contains(&position.y)) //.inspect(|v| {dbg!(v);})
 		})
 		.unique()
 		.count();
