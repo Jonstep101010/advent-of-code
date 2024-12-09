@@ -30,13 +30,25 @@ fn parse(input: Span) -> IResult<Span, Vec<(IVec2, char)>> {
 pub fn process(input: &str) -> miette::Result<String> {
 	let (_input, mut parsing_result) =
 		parse(Span::new(input)).map_err(|err| miette!("failed to parse: {}", err))?;
-	dbg!(&parsing_result);
+	// dbg!(&parsing_result);
 	parsing_result.sort_by(|a, b| a.1.cmp(&b.1));
 	// we want to get in a row the same frequencies
-	let _ = parsing_result.chunk_by(|a, b| a.1 == b.1);
-	dbg!(&parsing_result);
-	let antinode_count = 0;
-	Ok(antinode_count.to_string())
+	let antinode_positions = parsing_result
+		.chunk_by(|a, b| a.1 == b.1)
+		.into_iter()
+		.map(|chunk| {
+			dbg!(chunk[0]);
+			itertools::Itertools::combinations(chunk.iter(), 2)
+				.map(|antennas| {
+					// antennas: combination of 2 points of same type (same char & case/num)
+					// dbg!(antennas);
+					antennas[0].0 - antennas[1].0
+				})
+				.count()
+		})
+		.collect::<Vec<usize>>();
+	// dbg!(&parsing_result);
+	Ok(antinode_positions.len().to_string())
 }
 
 #[cfg(test)]
