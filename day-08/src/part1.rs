@@ -35,32 +35,25 @@ pub fn process(input: &str) -> miette::Result<String> {
 
 	let (_input, mut parsing_result) =
 		parse(Span::new(input)).map_err(|err| miette!("failed to parse: {}", err))?;
-	// dbg!(&parsing_result);
 	parsing_result.sort_by(|a, b| a.1.cmp(&b.1));
-	// we want to get in a row the same frequencies
-	let antinode_positions = parsing_result
+	// we want to get in a row the same frequencies,
+	// check for each of them their diff and possible resulting antinodes
+	let antinode_count = parsing_result
 		.chunk_by(|a, b| a.1 == b.1)
-		.into_iter()
 		.flat_map(|chunk| {
-			dbg!(chunk[0]);
 			itertools::Itertools::combinations(chunk.iter(), 2)
 				.flat_map(|antennas| {
 					// antennas: combination of 2 points of same type (same char & case/num)
-					// dbg!(antennas);
 					let diff = antennas[0].0 - antennas[1].0;
 					[antennas[0].0 + diff, antennas[1].0 - diff]
 				})
 				.filter(|position| {
 					bound_horizontal.contains(&position.x) && bound_vertical.contains(&position.y)
-				})
-				.inspect(|v| {
-					dbg!(v);
-				})
+				}) //.inspect(|v| {dbg!(v);})
 		})
 		.unique()
 		.count();
-	// dbg!(&parsing_result);
-	Ok(antinode_positions.to_string())
+	Ok(antinode_count.to_string())
 }
 
 #[cfg(test)]
