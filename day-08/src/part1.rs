@@ -2,7 +2,7 @@ use glam::IVec2;
 use itertools::Itertools;
 use miette::miette;
 use nom::{
-	AsChar, IResult, bytes::complete::take_till, character::complete::satisfy, multi::many1,
+	IResult, bytes::complete::take_till, character::complete::satisfy, multi::many1,
 	sequence::preceded,
 };
 use nom_locate::{LocatedSpan, position};
@@ -15,7 +15,9 @@ fn alphanum_position(input: Span) -> IResult<Span, (IVec2, char)> {
 		position.get_column() as i32 - 1,
 		position.location_line() as i32 - 1,
 	);
-	let (input, c) = satisfy(|c| c.is_alphanum())(input)?;
+	let (input, c) = satisfy(
+		nom::AsChar::is_alphanum, /* same as |c| c.is_alphanum() */
+	)(input)?;
 	Ok((input, (IVec2::new(x, y), c)))
 }
 
@@ -36,18 +38,22 @@ pub fn process(input: &str) -> miette::Result<String> {
 	let (_input, mut parsing_result) =
 		parse(Span::new(input)).map_err(|err| miette!("failed to parse: {}", err))?;
 	parsing_result.sort_by(|a, b| a.1.cmp(&b.1));
+	let all_antennas = parsing_result; // not mutable!
 	// we want to get in a row the same frequencies,
 	// check for each of them their diff and possible resulting antinodes
-	let antinode_count = parsing_result
-		.chunk_by(|a, b| a.1 == b.1)
-		.flat_map(|chunk| {
-			itertools::Itertools::combinations(chunk.iter(), 2)
-				.flat_map(|antennas| {
-					// antennas: combination of 2 points of same type (same char & case/num)
-					let diff = antennas[0].0 - antennas[1].0;
-					[antennas[0].0 + diff, antennas[1].0 - diff]
+	let antinode_count = all_antennas
+		.chunk_by(|(_, freq_a), (_, freq_b)| freq_a == freq_b)
+		.flat_map(|frequency| {
+			frequency
+				.iter()
+				.tuple_combinations() // iterate over antenna combinations
+				.flat_map(|((pa, _), (pb, _))| {
+					let diff = pa - pb;
+					// this combinations' antinodes: see goodnotes for explanation
+					[pa + diff, pb - diff]
 				})
 				.filter(|position| {
+					// keep only antinodes inside grid bounds
 					bound_horizontal.contains(&position.x) && bound_vertical.contains(&position.y)
 				}) //.inspect(|v| {dbg!(v);})
 		})
