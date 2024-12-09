@@ -36,11 +36,11 @@ pub fn process(input: &str) -> miette::Result<String> {
 		0..input.lines().count() as i32,               //height
 	);
 
-	let (_input, all_antennas_by_freq) = parse(Span::new(input))
+	let all_antennas_by_freq = parse(Span::new(input))
 		// order by frequency with mut parsing_result: freq_0, freq_0, freq_1, freq_1
-		.map(|(_input, mut parsing_result)| {
+		.map(|(_, mut parsing_result)| {
 			parsing_result.sort_by(|(_, freq_a), (_, freq_b)| freq_a.cmp(freq_b));
-			(_input, parsing_result)
+			parsing_result
 		})
 		.map_err(|err| miette!("failed to parse: {}", err))?;
 
@@ -48,18 +48,16 @@ pub fn process(input: &str) -> miette::Result<String> {
 	let antinode_count = all_antennas_by_freq
 		.chunk_by(|(_, freq_a), (_, freq_b)| freq_a == freq_b)
 		.flat_map(|frequency| {
+			// for antennas of same frequency
 			frequency
 				.iter()
-				.tuple_combinations() // iterate over antenna combinations
-				.flat_map(|((pa, _), (pb, _))| {
+				.tuple_combinations() // get combinations
+				.flat_map(|(&(pa, _), &(pb, _))| {
 					let diff = pa - pb;
 					// this combinations' antinodes: see goodnotes for explanation
 					[pa + diff, pb - diff]
 				})
-				.filter(|position| {
-					// keep only antinodes inside grid horizontal, vertical bounds
-					range_x.contains(&position.x) && range_y.contains(&position.y)
-				}) //.inspect(|v| {dbg!(v);})
+				.filter(|position| range_x.contains(&position.x) && range_y.contains(&position.y)) // keep only antinodes within bounds
 		})
 		.unique()
 		.count();
