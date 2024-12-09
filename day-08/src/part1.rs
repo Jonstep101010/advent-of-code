@@ -28,9 +28,13 @@ fn parse(input: Span) -> IResult<Span, Vec<(IVec2, char)>> {
 
 #[tracing::instrument]
 pub fn process(input: &str) -> miette::Result<String> {
-	let (_input, parsing_result) =
+	let (_input, mut parsing_result) =
 		parse(Span::new(input)).map_err(|err| miette!("failed to parse: {}", err))?;
-	dbg!(parsing_result);
+	dbg!(&parsing_result);
+	parsing_result.sort_by(|a, b| a.1.cmp(&b.1));
+	// we want to get in a row the same frequencies
+	let _ = parsing_result.chunk_by(|a, b| a.1 == b.1);
+	dbg!(&parsing_result);
 	let antinode_count = 0;
 	Ok(antinode_count.to_string())
 }
