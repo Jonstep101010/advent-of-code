@@ -31,9 +31,10 @@ fn parse(input: Span) -> IResult<Span, Vec<(IVec2, char)>> {
 
 #[tracing::instrument]
 pub fn process(input: &str) -> miette::Result<String> {
-	let height = input.lines().count();
-	let width = input.lines().next().unwrap().len();
-	let (bound_horizontal, bound_vertical) = (0..width as i32, 0..height as i32);
+	let (range_x, range_y) = (
+		0..input.lines().next().unwrap().len() as i32, //width
+		0..input.lines().count() as i32,               //height
+	);
 
 	let (_input, all_antennas_by_freq) = parse(Span::new(input))
 		// order by frequency with mut parsing_result: freq_0, freq_0, freq_1, freq_1
@@ -42,7 +43,8 @@ pub fn process(input: &str) -> miette::Result<String> {
 			(_input, parsing_result)
 		})
 		.map_err(|err| miette!("failed to parse: {}", err))?;
-	// check for each of them their diff and possible resulting antinodes
+
+	// check for each of them their diff and possible resulting antinodes inside the grid
 	let antinode_count = all_antennas_by_freq
 		.chunk_by(|(_, freq_a), (_, freq_b)| freq_a == freq_b)
 		.flat_map(|frequency| {
@@ -55,8 +57,8 @@ pub fn process(input: &str) -> miette::Result<String> {
 					[pa + diff, pb - diff]
 				})
 				.filter(|position| {
-					// keep only antinodes inside grid bounds
-					bound_horizontal.contains(&position.x) && bound_vertical.contains(&position.y)
+					// keep only antinodes inside grid horizontal, vertical bounds
+					range_x.contains(&position.x) && range_y.contains(&position.y)
 				}) //.inspect(|v| {dbg!(v);})
 		})
 		.unique()
