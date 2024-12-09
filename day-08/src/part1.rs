@@ -1,4 +1,5 @@
 use glam::IVec2;
+use itertools::Itertools;
 use miette::miette;
 use nom::{
 	AsChar, IResult, bytes::complete::take_till, character::complete::satisfy, multi::many1,
@@ -28,6 +29,10 @@ fn parse(input: Span) -> IResult<Span, Vec<(IVec2, char)>> {
 
 #[tracing::instrument]
 pub fn process(input: &str) -> miette::Result<String> {
+	let height = input.lines().count();
+	let width = input.lines().next().unwrap().len();
+	let (bound_horizontal, bound_vertical) = (0..width as i32, 0..height as i32);
+
 	let (_input, mut parsing_result) =
 		parse(Span::new(input)).map_err(|err| miette!("failed to parse: {}", err))?;
 	// dbg!(&parsing_result);
@@ -39,11 +44,19 @@ pub fn process(input: &str) -> miette::Result<String> {
 		.map(|chunk| {
 			dbg!(chunk[0]);
 			itertools::Itertools::combinations(chunk.iter(), 2)
-				.map(|antennas| {
+				.flat_map(|antennas| {
 					// antennas: combination of 2 points of same type (same char & case/num)
 					// dbg!(antennas);
-					antennas[0].0 - antennas[1].0
+					let diff = antennas[0].0 - antennas[1].0;
+					[antennas[0].0 + diff, antennas[1].0 - diff]
 				})
+				.filter(|position| {
+					bound_horizontal.contains(&position.x) && bound_vertical.contains(&position.y)
+				})
+				.inspect(|v| {
+					dbg!(v);
+				})
+				.unique()
 				.count()
 		})
 		.collect::<Vec<usize>>();
