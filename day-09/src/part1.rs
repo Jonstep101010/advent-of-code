@@ -33,14 +33,14 @@ fn parse_block(input: &str) -> String {
 			} else {
 				(idx / 2).to_string()
 			};
-			for _ in 1..=val {
+			for _ in 0..val {
 				num_seq.push_str(&to_push);
 			}
 			num_seq
 		} else {
 			// dots
 			let mut num_seq = String::new();
-			for _ in 1..=val {
+			for _ in 0..val {
 				num_seq.push('.');
 			}
 			num_seq
@@ -50,13 +50,13 @@ fn parse_block(input: &str) -> String {
 	block
 }
 
-#[must_use]
-pub fn compress(block: &str) -> String {
+// block of 0.110 needs to become 0101.
+fn compress(block: &str) -> String {
 	let mut compressed = block.to_owned();
 	loop {
 		// find position of first '.', make sure it is before last digit
-		let first_free_idx = compressed.find('.');
-		let last_num = compressed.rfind(|c: char| c.is_numeric());
+		let first_free_idx = compressed.find(".");
+		let last_num = compressed.rfind(|c: char| c.is_ascii_digit());
 		if first_free_idx.is_none() || first_free_idx >= last_num || last_num.is_none() {
 			break;
 		}
@@ -88,7 +88,11 @@ mod tests {
 
 	#[test]
 	fn test_process() -> miette::Result<()> {
+		assert_eq!("16", process("14113")?);
+		assert_eq!("6", process("133")?);
+		assert_eq!("5", process("252")?);
 		assert_eq!("1928", process("2333133121414131402")?);
+		assert_eq!("12", process("111000000000000000001")?);
 		assert_eq!("69", process("12345")?);
 		Ok(())
 	}
@@ -99,6 +103,7 @@ mod tests {
 			parse_block("2333133121414131402")
 		);
 		assert_eq!("0..111....22222".to_string(), parse_block("12345"));
+		assert_eq!("0.110".to_string(), parse_block("111000000000000000001"));
 		Ok(())
 	}
 	#[test]
@@ -111,6 +116,7 @@ mod tests {
 			"022111222......".to_string(),
 			compress(&"0..111....22222".to_string())
 		);
+		assert_eq!("0101.".to_string(), compress("0.110"));
 		Ok(())
 	}
 	#[test]
