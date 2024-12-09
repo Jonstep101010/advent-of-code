@@ -35,13 +35,15 @@ pub fn process(input: &str) -> miette::Result<String> {
 	let width = input.lines().next().unwrap().len();
 	let (bound_horizontal, bound_vertical) = (0..width as i32, 0..height as i32);
 
-	let (_input, mut parsing_result) =
-		parse(Span::new(input)).map_err(|err| miette!("failed to parse: {}", err))?;
-	parsing_result.sort_by(|a, b| a.1.cmp(&b.1));
-	let all_antennas = parsing_result; // not mutable!
-	// we want to get in a row the same frequencies,
+	let (_input, all_antennas_by_freq) = parse(Span::new(input))
+		// order by frequency with mut parsing_result: freq_0, freq_0, freq_1, freq_1
+		.map(|(_input, mut parsing_result)| {
+			parsing_result.sort_by(|(_, freq_a), (_, freq_b)| freq_a.cmp(freq_b));
+			(_input, parsing_result)
+		})
+		.map_err(|err| miette!("failed to parse: {}", err))?;
 	// check for each of them their diff and possible resulting antinodes
-	let antinode_count = all_antennas
+	let antinode_count = all_antennas_by_freq
 		.chunk_by(|(_, freq_a), (_, freq_b)| freq_a == freq_b)
 		.flat_map(|frequency| {
 			frequency
