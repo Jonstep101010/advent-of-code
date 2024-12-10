@@ -31,28 +31,31 @@ fn find_path_rec(grid: &mut Vec<Vec<u32>>, position: (usize, usize), altitude: u
 }
 
 use itertools::Itertools;
+#[allow(clippy::missing_panics_doc)]
+#[allow(clippy::missing_errors_doc)]
 pub fn process(input: &str) -> miette::Result<String> {
-	let mut rgrid = vec![];
-	for line in input.lines() {
-		rgrid.push(
+	let rgrid: Vec<Vec<u32>> = input
+		.lines()
+		.map(|line| {
 			line.chars()
-				.map(|char| char.to_digit(10).unwrap())
-				.collect_vec(),
-		);
-	}
-	let mut rtrailheads = HashMap::new();
-	for (i, grid) in rgrid.iter().enumerate() {
-		for (j, grid) in grid.iter().enumerate() {
-			let x = *grid;
-			if x == 0 {
-				rtrailheads.insert((i, j), true);
-			}
-		}
-	}
+				.map(|char| char.to_digit(10).expect("grid cannot contain non-digits"))
+				.collect_vec()
+		})
+		.collect_vec();
+	let rtrailheads: HashMap<(usize, usize), bool> = rgrid
+		.iter()
+		.enumerate()
+		.flat_map(|(i, grid)| {
+			grid.iter().enumerate().filter_map(
+				move |(j, &x)| {
+					if x == 0 { Some(((i, j), true)) } else { None }
+				},
+			)
+		})
+		.collect();
 	let score = {
 		rtrailheads
 			.keys()
-			.into_iter()
 			.map(|th| {
 				let mut grid = rgrid.clone();
 				find_path_rec(&mut grid, *th, 0)
