@@ -37,7 +37,6 @@ pub fn process(input: &str) -> miette::Result<String> {
 			if altitude != grid[position[0]][position[1]]:
 				return 0
 			if grid[position[0]][position[1]] == 9:
-				grid[position[0]][position[1]] = 0
 				return 1
 			peak_count = find_path_rec(grid, (position[0] + 1, position[1]), altitude + 1)
 			peak_count += find_path_rec(grid, (position[0] - 1, position[1]), altitude + 1)
