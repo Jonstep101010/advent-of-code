@@ -1,7 +1,5 @@
 #![warn(clippy::pedantic)]
 
-use std::collections::HashMap;
-
 fn find_path_rec(grid: &mut Vec<Vec<u32>>, position: (usize, usize), altitude: u32) -> u32 {
 	let (x, y) = position;
 	if x >= grid.len() || y >= grid[0].len() {
@@ -31,10 +29,11 @@ fn find_path_rec(grid: &mut Vec<Vec<u32>>, position: (usize, usize), altitude: u
 }
 
 use itertools::Itertools;
+use std::collections::HashMap;
 #[allow(clippy::missing_panics_doc)]
 #[allow(clippy::missing_errors_doc)]
 pub fn process(input: &str) -> miette::Result<String> {
-	let rgrid: Vec<Vec<u32>> = input
+	let grid: Vec<Vec<u32>> = input
 		.lines()
 		.map(|line| {
 			line.chars()
@@ -42,7 +41,7 @@ pub fn process(input: &str) -> miette::Result<String> {
 				.collect_vec()
 		})
 		.collect_vec();
-	let rtrailheads: HashMap<(usize, usize), bool> = rgrid
+	let trailheads: HashMap<(usize, usize), bool> = grid
 		.iter()
 		.enumerate()
 		.flat_map(|(i, grid)| {
@@ -54,10 +53,10 @@ pub fn process(input: &str) -> miette::Result<String> {
 		})
 		.collect();
 	let score = {
-		rtrailheads
+		trailheads
 			.keys()
 			.map(|th| {
-				let mut grid = rgrid.clone();
+				let mut grid = grid.clone();
 				find_path_rec(&mut grid, *th, 0)
 			})
 			.sum::<u32>()
