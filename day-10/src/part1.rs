@@ -1,5 +1,16 @@
+use std::collections::HashMap;
+
 use inline_python::{Context, python};
 pub fn process(input: &str) -> miette::Result<String> {
+	let mut rgrid = vec![];
+	// let mut trailheads = HashMap::new();
+	for line in input.lines() {
+		let mut row = vec![];
+		for char in line.chars() {
+			row.push(char.to_digit(10).unwrap())
+		}
+		rgrid.push(row);
+	}
 	let trailhead_scores: Context = python! {
 		// # a grid consists of x and y coordinates
 		// # filled with numbers from 0 to 9
@@ -10,14 +21,9 @@ pub fn process(input: &str) -> miette::Result<String> {
 		// # a peak can be connected to multiple trailheads
 		from copy import deepcopy
 
-		grid = []
+		grid = 'rgrid
 		trailheads = {}
-		input = 'input;
-		print (input)
-		// # parse grid
-		for line in (input.splitlines()):
-			row = [int(char) for char in line]
-			grid.append(row)
+		print(grid)
 
 		// # find trailheads
 		for i in range(0, len(grid)):
