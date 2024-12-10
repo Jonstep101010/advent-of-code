@@ -1,58 +1,67 @@
-use inline_python::{Context, python};
+#![warn(clippy::pedantic)]
+
+fn find_path_rec(grid: &mut Vec<Vec<u32>>, position: (usize, usize), altitude: u32) -> u32 {
+	let (x, y) = position;
+	if x >= grid.len() || y >= grid[0].len() {
+		return 0;
+	}
+	if altitude != grid[x][y] {
+		return 0;
+	}
+	if grid[x][y] == 9 {
+		grid[x][y] = 0;
+		return 1;
+	}
+	let mut peak_count = 0;
+	if x > 0 {
+		peak_count += find_path_rec(grid, (x - 1, y), altitude + 1);
+	}
+	if x < grid.len() - 1 {
+		peak_count += find_path_rec(grid, (x + 1, y), altitude + 1);
+	}
+	if y > 0 {
+		peak_count += find_path_rec(grid, (x, y - 1), altitude + 1);
+	}
+	if y < grid[0].len() - 1 {
+		peak_count += find_path_rec(grid, (x, y + 1), altitude + 1);
+	}
+	peak_count
+}
+
+use itertools::Itertools;
+use std::collections::HashMap;
+#[allow(clippy::missing_panics_doc)]
+#[allow(clippy::missing_errors_doc)]
 pub fn process(input: &str) -> miette::Result<String> {
-	let trailhead_scores: Context = python! {
-		// # a grid consists of x and y coordinates
-		// # filled with numbers from 0 to 9
-		// # for each peak (9), find all unique trailheads (1)
-		// # a peak has to be connected to a trailhead by trail
-		// # trail (always increasing numbers by 1) can only go up, down, left, right
-		// # a trailhead can be connected to multiple peaks
-		// # a peak can be connected to multiple trailheads
-		from copy import deepcopy
-
-		grid = []
-		trailheads = {}
-		input = 'input;
-		print (input)
-		// # parse grid
-		for line in (input.splitlines()):
-			row = [int(char) for char in line]
-			grid.append(row)
-
-		// # find trailheads
-		for i in range(0, len(grid)):
-			for j in range(0, len(grid[i])):
-				x = grid[i][j]
-				if x == 0:
-					trailheads[(i, j)] = []
-
-		print("trailheads")
-		print(trailheads)
-		// # find paths for each trailhead
-		def find_path_rec(grid, position, altitude):
-			// # if not in bounds
-			if not (0 <= position[0] < len(grid) and 0 <= position[1] < len(grid[0])):
-				return 0
-			// # if not connected/path blocked
-			if altitude != grid[position[0]][position[1]]:
-				return 0
-			if grid[position[0]][position[1]] == 9:
-				grid[position[0]][position[1]] = 0
-				return 1
-			peak_count = find_path_rec(grid, (position[0] + 1, position[1]), altitude + 1)
-			peak_count += find_path_rec(grid, (position[0] - 1, position[1]), altitude + 1)
-			peak_count += find_path_rec(grid, (position[0], position[1] + 1), altitude + 1)
-			peak_count += find_path_rec(grid, (position[0], position[1] - 1), altitude + 1)
-			return peak_count
-
-		unique_paths = 0
-		for trailhead in trailheads:
-			print("trailhead:", trailhead)
-			// # print(grid[trailhead[0]][trailhead[1]])
-			unique_paths += find_path_rec(deepcopy(grid), deepcopy(trailhead), 0)
+	let grid: Vec<Vec<u32>> = input
+		.lines()
+		.map(|line| {
+			line.chars()
+				.map(|char| char.to_digit(10).expect("grid cannot contain non-digits"))
+				.collect_vec()
+		})
+		.collect_vec();
+	let trailheads: HashMap<(usize, usize), bool> = grid
+		.iter()
+		.enumerate()
+		.flat_map(|(i, grid)| {
+			grid.iter().enumerate().filter_map(
+				move |(j, &x)| {
+					if x == 0 { Some(((i, j), true)) } else { None }
+				},
+			)
+		})
+		.collect();
+	let score = {
+		trailheads
+			.keys()
+			.map(|th| {
+				let mut grid = grid.clone();
+				find_path_rec(&mut grid, *th, 0)
+			})
+			.sum::<u32>()
 	};
-
-	Ok(trailhead_scores.get::<i32>("unique_paths").to_string())
+	Ok(score.to_string())
 }
 
 #[cfg(test)]
