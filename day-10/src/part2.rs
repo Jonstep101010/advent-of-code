@@ -9,7 +9,6 @@ fn find_path_rec(grid: &mut Vec<Vec<u32>>, position: (usize, usize), altitude: u
 		return 0;
 	}
 	if grid[x][y] == 9 {
-		grid[x][y] = 0;
 		return 1;
 	}
 	let mut peak_count = 0;
