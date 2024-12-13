@@ -123,7 +123,7 @@ pub fn process(input: &str) -> miette::Result<String> {
 	dbg!(&results);
 
 	// minimum tokens to get all possible prizes
-	let required_tokens: u64 = 0;
+	let required_tokens: u32 = results.iter().sum();
 	Ok(required_tokens.to_string())
 }
 
