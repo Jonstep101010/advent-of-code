@@ -10,6 +10,8 @@ use nom::{
 
 pub type TokenCost = u64;
 const MAX_BTN_PRESSES: u32 = 100;
+const COST_A: u32 = 3;
+const COST_B: u32 = 1;
 
 #[derive(Debug)]
 struct ClawMachine {
@@ -95,7 +97,17 @@ pub fn process(input: &str) -> miette::Result<String> {
 
 	let results = games.iter().map(|machine| {
 		// do something with djikstra algo
-		let result = pathfinding::prelude::dijkstra(&UVec2::ZERO,/* somehow define moves */ , |prize| {*prize == machine.prize});
+		// example usage:
+		static GOAL: (i32, i32) = (4, 6);
+		let result = pathfinding::prelude::dijkstra(&(1, 1),/* successors */
+							|&(x, y)| vec![(x+1,y+2), (x+1,y-2), (x-1,y+2), (x-1,y-2),
+											(x+2,y+1), (x+2,y-1), (x-2,y+1), (x-2,y-1)]
+										.into_iter().map(|p| (p, 1)),
+							|&p| p == GOAL);
+		assert_eq!(result.expect("no path found").1, 4);
+		// end example
+		let result = pathfinding::prelude::dijkstra(&UVec2::ZERO,
+		/* somehow define moves */ , |prize| {*prize == machine.prize});
 	});
 
 	// minimum tokens to get all possible prizes
