@@ -1,14 +1,14 @@
-use either::Either;
+#![warn(clippy::pedantic)]
+
 use num_traits::Euclid;
-use std::{collections::HashMap, iter::from_fn};
+use std::collections::HashMap;
 
 trait Cache {
-	fn entry_count(&mut self, entry: u64, stone_count: u64);
+	fn entry_increment_count(&mut self, entry: u64, stone_count: u64);
 }
 
 impl Cache for HashMap<u64, u64> {
-	fn entry_count(&mut self, entry: u64, stone_count: u64) {
-		// Implement the function here
+	fn entry_increment_count(&mut self, entry: u64, stone_count: u64) {
 		self.entry(entry)
 			.and_modify(|v| {
 				// increment by 1
@@ -22,36 +22,34 @@ impl Cache for HashMap<u64, u64> {
 #[tracing::instrument]
 pub fn process(input: &str, blinks: usize) -> miette::Result<String> {
 	// parse input stones
-	let mut stones: Vec<u64> = input
+	let stones: Vec<u64> = input
 		.split_ascii_whitespace()
 		.map(|stone| stone.parse::<u64>().expect("all input shall be valid"))
 		.collect();
 
-	// store
+	// store stones, associated count
 	let mut cache: HashMap<u64, u64> = HashMap::default();
-	for stone in stones {
-		cache.entry_count(stone, 1);
+	for &stone in &stones {
+		cache.entry_increment_count(stone, 1);
 	}
 
 	for _ in 0..blinks {
 		let mut new_cache: HashMap<u64, u64> = HashMap::new();
 
-		for (stone, &count) in cache.iter() {
+		for (stone, &count) in &cache {
 			match stone {
 				0 => {
 					// get the next value: 1
-					// Either::<[u64; 1], _>::Left([1])
-					new_cache.entry_count(1, count);
+					new_cache.entry_increment_count(1, count);
 				}
 				n if (n.checked_ilog10().unwrap_or(0) + 1) % 2 == 0 => {
 					// get the next values by splitting at midpoint
 					let split_at = (n.checked_ilog10().unwrap_or(0) + 1) / 2;
 					let (left, right) = n.div_rem_euclid(&10u64.pow(split_at));
-					// Right denotes we have 2 values (Left has one)
-					new_cache.entry_count(left, count);
-					new_cache.entry_count(right, count);
+					new_cache.entry_increment_count(left, count);
+					new_cache.entry_increment_count(right, count);
 				}
-				n => new_cache.entry_count(n * 2024, count),
+				n => new_cache.entry_increment_count(n * 2024, count),
 			}
 		}
 		cache = new_cache;
