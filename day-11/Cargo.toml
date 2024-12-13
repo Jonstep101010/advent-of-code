@@ -12,6 +12,7 @@ tracing.workspace = true
 tracing-subscriber.workspace = true
 miette.workspace = true
 either = "1.13.0"
+num-traits = "0.2.19"
 
 [dev-dependencies]
 divan.workspace = true

@@ -1,9 +1,5 @@
-// fn change_stones(stones: &[u64]) -> Vec<u64> {
-// 	stones.iter().enumerate().map(|(idx, stone)| {
-// 		if stone
-// 	})
-// }
 use either::Either;
+use num_traits::Euclid;
 use std::iter::from_fn;
 
 #[tracing::instrument]
@@ -30,15 +26,8 @@ pub fn process(input: &str, blinks: usize) -> miette::Result<String> {
 					// get the next values by splitting
 					n if (n.checked_ilog10().unwrap_or(0) + 1) % 2 == 0 => {
 						// split at midpoint
-						let split_at: usize = (n.checked_ilog10().unwrap_or(0) + 1 / 2) as usize;
-						// use a String to be able to work on the value
-						let split = n.to_string();
-						let split = split.split_at(split_at);
-						dbg!(split);
-						let (left, right) = (
-							split.0.parse::<u64>().expect("parsing u64 shall not fail"),
-							split.0.parse::<u64>().expect("parsing u64 shall not fail"),
-						);
+						let split_at = (n.checked_ilog10().unwrap_or(0) + 1) / 2;
+						let (left, right) = n.div_rem_euclid(&10u64.pow(split_at));
 						// Right denotes we have 2 values (Left has one)
 						Either::<[u64; 1], [u64; 2]>::Right([left, right])
 					}
@@ -69,6 +58,7 @@ mod tests {
 		assert_eq!("7", process(input, 0)?);
 		Ok(())
 	}
+	#[test]
 	fn test_process_example() -> miette::Result<()> {
 		let input = "125 17";
 		assert_eq!("55312", process(input, 25 - 1)?);
