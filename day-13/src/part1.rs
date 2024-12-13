@@ -99,15 +99,41 @@ pub fn process(input: &str) -> miette::Result<String> {
 		// do something with djikstra algo
 		// example usage:
 		static GOAL: (i32, i32) = (4, 6);
-		let result = pathfinding::prelude::dijkstra(&(1, 1),/* successors */
-							|&(x, y)| vec![(x+1,y+2), (x+1,y-2), (x-1,y+2), (x-1,y-2),
-											(x+2,y+1), (x+2,y-1), (x-2,y+1), (x-2,y-1)]
-										.into_iter().map(|p| (p, 1)),
-							|&p| p == GOAL);
+		let result = pathfinding::prelude::dijkstra(
+			&(1, 1), /* successors */
+			|&(x, y)| {
+				vec![
+					(x + 1, y + 2),
+					(x + 1, y - 2),
+					(x - 1, y + 2),
+					(x - 1, y - 2),
+					(x + 2, y + 1),
+					(x + 2, y - 1),
+					(x - 2, y + 1),
+					(x - 2, y - 1),
+				]
+				.into_iter()
+				.map(|p| (p, 1))
+			},
+			|&p| p == GOAL,
+		);
 		assert_eq!(result.expect("no path found").1, 4);
 		// end example
-		let result = pathfinding::prelude::dijkstra(&UVec2::ZERO,
-		/* somehow define moves */ , |prize| {*prize == machine.prize});
+		let result = pathfinding::prelude::dijkstra(
+			&UVec2::ZERO,
+			|position: &UVec2| {
+				let (x, y) = (position.x, position.y);
+				if x > machine.prize.x || y > machine.prize.y {
+					vec![]
+				} else {
+					vec![
+						(position + machine.a, COST_A),
+						(position + machine.b, COST_B),
+					]
+				}
+			},
+			|prize| *prize == machine.prize,
+		);
 	});
 
 	// minimum tokens to get all possible prizes
