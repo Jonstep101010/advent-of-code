@@ -9,23 +9,20 @@ pub fn process(input: &str, blinks: usize) -> miette::Result<String> {
 		.split_ascii_whitespace()
 		.map(|stone| stone.parse::<u64>().expect("all input shall be valid"))
 		.collect();
-	// assert_eq!(vec![0, 1, 10, 99, 999], stones);
 
 	// check rules, replace/split/multiply, cache iteration?
 	// stones have linear history, never merging
-	// use some sort of recursion iteration
 	let mut all_iterations = from_fn(move || {
 		let next_stones: Vec<u64> = stones
 			.iter()
-			.map(|stone| {
+			.flat_map(|stone| {
 				match stone {
 					0 => {
 						// get the next value: 1
 						Either::<[u64; 1], _>::Left([1])
 					}
-					// get the next values by splitting
 					n if (n.checked_ilog10().unwrap_or(0) + 1) % 2 == 0 => {
-						// split at midpoint
+						// get the next values by splitting at midpoint
 						let split_at = (n.checked_ilog10().unwrap_or(0) + 1) / 2;
 						let (left, right) = n.div_rem_euclid(&10u64.pow(split_at));
 						// Right denotes we have 2 values (Left has one)
@@ -35,7 +32,6 @@ pub fn process(input: &str, blinks: usize) -> miette::Result<String> {
 				}
 				.into_iter()
 			})
-			.flatten()
 			.collect();
 		stones = next_stones.clone();
 		// Some(stones)
