@@ -11,6 +11,7 @@ nom.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true
 miette.workspace = true
+either = "1.13.0"
 
 [dev-dependencies]
 divan.workspace = true
