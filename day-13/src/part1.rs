@@ -93,6 +93,11 @@ pub fn process(input: &str) -> miette::Result<String> {
 	// check which are possible: Some(token_cost), None (not possible)
 	// sum up all possible prizes' token cost
 
+	let results = games.iter().map(|machine| {
+		// do something with djikstra algo
+		let result = pathfinding::prelude::dijkstra(&UVec2::ZERO,/* somehow define moves */ , |prize| {*prize == machine.prize});
+	});
+
 	// minimum tokens to get all possible prizes
 	let required_tokens: u64 = 0;
 	Ok(required_tokens.to_string())
