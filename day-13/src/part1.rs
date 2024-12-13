@@ -1,10 +1,11 @@
 use glam::UVec2;
+use miette::miette;
 use nom::{
 	IResult, Parser,
 	bytes::complete::tag,
 	character::complete::{self, line_ending},
 	multi::separated_list1,
-	sequence::{preceded, separated_pair, terminated},
+	sequence::{preceded, separated_pair, terminated, tuple},
 };
 
 pub type TokenCost = u64;
@@ -43,7 +44,13 @@ fn parse_button(input: &str) -> IResult<&str, UVec2> {
 	.map(|(input, (x, y))| UVec2::new(x, y))
 }
 
-fn parse_prize() -> IResult<&str, UVec2> {}
+fn parse_prize() -> IResult<&str, UVec2> {
+	preceded(
+		tag("Prize: X="),
+		separated_pair(complete::u32, tag(", Y="), complete::u32),
+	)(input)
+	.map(|(input, (x, y))| UVec2::new(x, y))
+}
 
 // input:
 // instruc tion: X+val, Y+val
@@ -55,16 +62,15 @@ fn parse_prize() -> IResult<&str, UVec2> {}
 // Prize: X=5233, Y=14652
 // parse each blocks' data individually: by '\n'
 fn parse(input: &str) -> IResult<&str, Vec<ClawMachine>> {
-	let games = vec![];
-	let game = {
-		let (_, (a, b, prize)) = tuple(
+	let game: IResult<&str, ClawMachine> = {
+		let (input, (a, b, prize)) = tuple((
 			terminated(parse_button, line_ending),
 			terminated(parse_button, line_ending),
-			terminated(parse_prize, line_ending),
-		)(input)?;
-		ClawMachine { a, b, prize }
+			parse_prize,
+		))(input)?;
+		Ok((input, ClawMachine { a, b, prize }))
 	};
-	separated_list1(line_ending, game)(input)
+	separated_list1(tuple((line_ending, line_ending)), game)(input)
 }
 
 #[tracing::instrument]
@@ -72,6 +78,7 @@ pub fn process(input: &str) -> miette::Result<String> {
 	// parse input into usable data
 	// x and y for each button, prize location
 	// IVec2?
+	let games = parse(input).map_err(|err| miette!("invalid blocks in input: {}", err));
 
 	// use pathfinding to map with button combinations
 	// (max 100 presses per button)
