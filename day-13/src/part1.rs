@@ -1,4 +1,5 @@
 use glam::UVec2;
+use itertools::Itertools;
 use miette::miette;
 use nom::{
 	IResult, Parser,
@@ -89,52 +90,37 @@ pub fn process(input: &str) -> miette::Result<String> {
 	// x and y for each button, prize location
 	// IVec2?
 	let (_, games) = parse(input).map_err(|err| miette!("invalid blocks in input: {}", err))?;
-	dbg!(&games[0]);
 	// use pathfinding to map with button combinations
 	// (max 100 presses per button)
 	// check which are possible: Some(token_cost), None (not possible)
 	// sum up all possible prizes' token cost
 
-	let results = games.iter().map(|machine| {
-		// do something with djikstra algo
-		// example usage:
-		static GOAL: (i32, i32) = (4, 6);
-		let result = pathfinding::prelude::dijkstra(
-			&(1, 1), /* successors */
-			|&(x, y)| {
-				vec![
-					(x + 1, y + 2),
-					(x + 1, y - 2),
-					(x - 1, y + 2),
-					(x - 1, y - 2),
-					(x + 2, y + 1),
-					(x + 2, y - 1),
-					(x - 2, y + 1),
-					(x - 2, y - 1),
-				]
-				.into_iter()
-				.map(|p| (p, 1))
-			},
-			|&p| p == GOAL,
-		);
-		assert_eq!(result.expect("no path found").1, 4);
-		// end example
-		let result = pathfinding::prelude::dijkstra(
-			&UVec2::ZERO,
-			|position: &UVec2| {
-				let (x, y) = (position.x, position.y);
-				if x > machine.prize.x || y > machine.prize.y {
-					vec![]
-				} else {
-					vec![
-						(position + machine.a, COST_A),
-						(position + machine.b, COST_B),
-					]
-				}
-			},
-			|prize| *prize == machine.prize,
-		);
-	});
+	let results = games
+		.iter()
+		.flat_map(|machine| {
+			// do something with djikstra algo
+			let result = pathfinding::prelude::dijkstra(
+				&UVec2::ZERO,
+				|position: &UVec2| {
+					let (x, y) = (position.x, position.y);
+					if x > machine.prize.x || y > machine.prize.y {
+						vec![]
+					} else {
+						vec![
+							(position + machine.a, COST_A),
+							(position + machine.b, COST_B),
+						]
+					}
+				},
+				|prize| *prize == machine.prize,
+			);
+			// why is this not printing?
+			// dbg!(&result);
+			result.map(|res_item| res_item.1)
+		})
+		.collect_vec();
+
+	dbg!(&results);
 
 	// minimum tokens to get all possible prizes
 	let required_tokens: u64 = 0;
