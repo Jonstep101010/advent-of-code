@@ -32,44 +32,52 @@ fn claw_prize(/* location information */) -> Option<TokenCost> {
 }
 
 fn parse_button(input: &str) -> IResult<&str, UVec2> {
-	if input.contains('A') {
-		let tag_button = tag("Button A: X+");
-	} else {
-		let tag_button = tag("Button B: X+");
-	}
 	preceded(
-		tag_button,
-		separated_pair(complete::u32, tag(", Y+"), complete::u32),
+		{
+			if input.chars().nth(7).unwrap() == 'A' {
+				tag("Button A: X+")
+			} else {
+				tag("Button B: X+")
+			}
+		},
+		separated_pair(complete::u32, tag(", Y+"), complete::u32).map(|(x, y)| UVec2::new(x, y)),
 	)(input)
-	.map(|(input, (x, y))| UVec2::new(x, y))
 }
 
-fn parse_prize() -> IResult<&str, UVec2> {
+fn parse_prize(input: &str) -> IResult<&str, UVec2> {
 	preceded(
 		tag("Prize: X="),
-		separated_pair(complete::u32, tag(", Y="), complete::u32),
+		separated_pair(complete::u32, tag(", Y="), complete::u32).map(|(x, y)| UVec2::new(x, y)),
 	)(input)
-	.map(|(input, (x, y))| UVec2::new(x, y))
 }
 
-// input:
-// instruc tion: X+val, Y+val
-// btninstruct = (x, y) = &line[12..(location_comma - 1)], &line[(location_comma + 4)..(line.len())]
+// block in input:
 // Button A: X+77, Y+52
 // Button B: X+14, Y+32
-// instruc tion: X=val, Y=val
-// prize_loc = (x, y) = &line[9..(location_comma - 1)], &line[(location_comma + 4)..(line.len())]
 // Prize: X=5233, Y=14652
 // parse each blocks' data individually: by '\n'
-fn parse(input: &str) -> IResult<&str, Vec<ClawMachine>> {
-	let game: IResult<&str, ClawMachine> = {
+fn parse<'a>(input: &'a str) -> IResult<&'a str, Vec<ClawMachine>> {
+	/*
+	I wanted to try implementing a closure, that's why we needed lifetimes
+	the function implementation of the closure works without them:
+	fn game_fn(input: &str) -> IResult<&str, ClawMachine> {
 		let (input, (a, b, prize)) = tuple((
-			terminated(parse_button, line_ending),
-			terminated(parse_button, line_ending),
+			terminated(parse_button_a, line_ending),
+			terminated(parse_button_b, line_ending),
 			parse_prize,
 		))(input)?;
 		Ok((input, ClawMachine { a, b, prize }))
-	};
+	}
+	*/
+	let game =
+		|input: &'a str| -> Result<(&'a str, ClawMachine), nom::Err<nom::error::Error<&str>>> {
+			let (input, (a, b, prize)) = tuple((
+				terminated(parse_button, line_ending),
+				terminated(parse_button, line_ending),
+				parse_prize,
+			))(input)?;
+			Ok((input, ClawMachine { a, b, prize }))
+		};
 	separated_list1(tuple((line_ending, line_ending)), game)(input)
 }
 
@@ -78,8 +86,8 @@ pub fn process(input: &str) -> miette::Result<String> {
 	// parse input into usable data
 	// x and y for each button, prize location
 	// IVec2?
-	let games = parse(input).map_err(|err| miette!("invalid blocks in input: {}", err));
-
+	let (_, games) = parse(input).map_err(|err| miette!("invalid blocks in input: {}", err))?;
+	dbg!(&games[0]);
 	// use pathfinding to map with button combinations
 	// (max 100 presses per button)
 	// check which are possible: Some(token_cost), None (not possible)
