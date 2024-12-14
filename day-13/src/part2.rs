@@ -1,6 +1,6 @@
 #![warn(clippy::pedantic)]
 
-use glam::{DMat2, U64Vec2};
+use glam::{DMat2, f64::DVec2 as F64DVec2};
 use miette::miette;
 use nom::{
 	IResult, Parser,
@@ -17,12 +17,12 @@ const PRIZE_OFFSET: u64 = 10_000_000_000_000;
 
 #[derive(Debug)]
 struct ClawMachine {
-	a: U64Vec2,
-	b: U64Vec2,
-	prize: U64Vec2,
+	a: F64DVec2,
+	b: F64DVec2,
+	prize: F64DVec2,
 }
 
-fn parse_button(input: &str) -> IResult<&str, U64Vec2> {
+fn parse_button(input: &str) -> IResult<&str, F64DVec2> {
 	preceded(
 		{
 			if input.chars().nth(7).unwrap() == 'A' {
@@ -31,17 +31,18 @@ fn parse_button(input: &str) -> IResult<&str, U64Vec2> {
 				tag("Button B: X+")
 			}
 		},
-		separated_pair(complete::u64, tag(", Y+"), complete::u64).map(|(x, y)| U64Vec2::new(x, y)),
+		separated_pair(complete::u64, tag(", Y+"), complete::u64)
+			.map(|(x, y)| F64DVec2::new(x as f64, y as f64)),
 	)(input)
 }
 
-fn parse_prize(input: &str) -> IResult<&str, U64Vec2> {
+fn parse_prize(input: &str) -> IResult<&str, F64DVec2> {
 	preceded(
 		tag("Prize: X="),
 		separated_pair(complete::u64, tag(", Y="), complete::u64).map(|(x, y)| {
-			U64Vec2::new(
-				x + if cfg!(test) { 0 } else { PRIZE_OFFSET },
-				y + if cfg!(test) { 0 } else { PRIZE_OFFSET },
+			F64DVec2::new(
+				(x + if cfg!(test) { 0 } else { PRIZE_OFFSET }) as f64,
+				(y + if cfg!(test) { 0 } else { PRIZE_OFFSET }) as f64,
 			)
 		}),
 	)(input)
@@ -91,9 +92,9 @@ pub fn process(input: &str) -> miette::Result<String> {
 		.iter()
 		.filter_map(|game| {
 			// Convert to f64
-			let (ax, ay) = (game.a.x as f64, game.a.y as f64);
-			let (bx, by) = (game.b.x as f64, game.b.y as f64);
-			let (px, py) = (game.prize.x as f64, game.prize.y as f64);
+			let (ax, ay) = (game.a.x, game.a.y);
+			let (bx, by) = (game.b.x, game.b.y);
+			let (px, py) = (game.prize.x, game.prize.y);
 
 			// determinant of prize and button b
 			let mat_pb = DMat2::from_cols_array(&[px, bx, py, by]);
