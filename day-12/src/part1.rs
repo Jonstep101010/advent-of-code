@@ -1,5 +1,6 @@
 #![warn(clippy::pedantic)]
 
+use petgraph::prelude::*;
 use std::collections::HashMap;
 
 fn parse(input: &str) -> HashMap<(i32, i32), char> {
