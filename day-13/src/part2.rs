@@ -90,39 +90,27 @@ pub fn process(input: &str) -> miette::Result<String> {
 	// token costs of possible paths in vector
 	let total_spent: u64 = games
 		.iter()
-		.filter_map(|game| {
-			// Convert to f64
-			let (ax, ay) = (game.a.x, game.a.y);
-			let (bx, by) = (game.b.x, game.b.y);
-			let (px, py) = (game.prize.x, game.prize.y);
+		.filter_map(|ClawMachine { a, b, prize }| {
+			// order: xy,xy -> x,x,y,y using transpose
+			let mat_pb = DMat2::from_cols(*prize, *b);
+			let d_pb = mat_pb.transpose().determinant();
 
-			// determinant of prize and button b
-			let mat_pb = DMat2::from_cols_array(&[px, bx, py, by]);
-			let d_pb = mat_pb.determinant();
+			let mat_ab = DMat2::from_cols(*a, *b);
+			let d_ab = mat_ab.transpose().determinant();
 
-			let mat_ab = DMat2::from_cols_array(&[ax, bx, ay, by]);
-			let d_ab = mat_ab.determinant();
-
+			// quotient of determinants pb, ab
 			let count_btn_a = d_pb / d_ab;
-			// solve for b
-			let count_btn_b = (px - (ax * count_btn_a)) / bx;
-
+			// solve for b heading out from p (invert)
+			let divisor_b = prize.x - (a.x * count_btn_a);
+			let count_btn_b = divisor_b / b.x;
 			if count_btn_a.trunc() != count_btn_a || count_btn_b.trunc() != count_btn_b {
 				None
 			} else {
-				let max = if cfg!(test) { 100f64 } else { f64::INFINITY };
-				if count_btn_a > max || count_btn_b > max {
-					None
-				} else {
-					Some(COST_A * count_btn_a.round() as u64 + COST_B * count_btn_b.round() as u64)
-				}
+				Some(COST_A * count_btn_a.round() as u64 + COST_B * count_btn_b.round() as u64)
+				// @note ignore max sizes - not relevant for input
 			}
 		})
 		.sum();
-
-	// minimum tokens to get all possible prizes
-	// sum up all possible prizes' token cost
-	// Ok(required_tokens.to_string())
 	Ok(total_spent.to_string())
 }
 
