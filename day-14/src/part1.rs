@@ -16,7 +16,7 @@ struct Robot {
 	vel: (i32, i32),
 }
 
-fn print_grid(grid: &Vec<Vec<i32>>) {
+fn print_grid(grid: &Vec<Vec<usize>>) {
 	for rows in grid.iter() {
 		println!("{:?}", rows);
 	}
@@ -40,29 +40,54 @@ pub fn process(input: &str) -> miette::Result<String> {
 	// const AREA: usize = WIDTH * HEIGHT;
 	const MH: i32 = (WIDTH / 2) as i32;
 	const MV: i32 = (HEIGHT / 2) as i32;
-	let (mut lt, mut rt, mut lb, mut rb) = (0, 0, 0, 0);
 	// dbg!(MH, MV);
 
-	let mut grid: Vec<Vec<i32>> = vec![vec![0; WIDTH]; HEIGHT];
+	let mut grid: Vec<Vec<usize>> = vec![vec![0; WIDTH]; HEIGHT];
 	for Robot { pos, .. } in &robots {
 		grid[pos.1 as usize][pos.0 as usize] = 1;
 	}
 	print_grid(&grid);
 	println!(" -  - - -- - - -- --  -");
-	for robot in &mut robots {
-		(robot.pos.0, robot.pos.1) = (
-			((robot.pos.0 + (robot.vel.0 * 100)) % WIDTH as i32),
-			((robot.pos.1 + (robot.vel.1 * 100)) % HEIGHT as i32),
-		);
+	let mut new_robots: Vec<Robot> = Vec::new();
+	for robot in &robots {
+		new_robots.push(Robot {
+			pos: (
+				// fuck, modulo in python was so much easier...
+				((robot.pos.0 + (robot.vel.0 * 100)).rem_euclid(WIDTH as i32)),
+				((robot.pos.1 + (robot.vel.1 * 100)).rem_euclid(HEIGHT as i32)),
+			),
+			vel: robot.vel,
+		});
 	}
-	let mut grid: Vec<Vec<i32>> = vec![vec![0; WIDTH]; HEIGHT];
-	for Robot { pos, .. } in &robots {
-		grid[pos.1 as usize][pos.0 as usize] += 1;
+	// just so we don't accidentally shoot ourselves (again) ;(((((((())))))))
+	drop(robots);
+	let mut grid: Vec<Vec<usize>> = vec![vec![0; WIDTH]; HEIGHT];
+	// print_grid(&grid);
+	for robot in &new_robots {
+		grid[robot.pos.1 as usize][robot.pos.0 as usize] += 1;
 	}
+
 	print_grid(&grid);
 	// dbg!(lt, rt, lb, rb);
-	let safety_factor = rt * lt * rb * lb;
+	let (mut lt, mut rt, mut lb, mut rb) = (0, 0, 0, 0);
+	for robot in &new_robots {
+		let (x, y) = (robot.pos.0, robot.pos.1);
 
+		if x < MH {
+			if y < MV {
+				lb += 1;
+			} else if y > MV {
+				lt += 1;
+			}
+		} else if x > MH {
+			if y < MV {
+				rt += 1;
+			} else if y > MV {
+				rb += 1;
+			}
+		}
+	}
+	let safety_factor = rt * lt * rb * lb;
 	Ok(safety_factor.to_string())
 }
 
