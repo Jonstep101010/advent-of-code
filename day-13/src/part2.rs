@@ -13,8 +13,7 @@ use nom::{
 const COST_A: u64 = 3;
 const COST_B: u64 = 1;
 
-// const PRIZE_OFFSET: u64 = 0;
-const PRIZE_OFFSET: u64 = 10000000000000;
+const PRIZE_OFFSET: u64 = 10_000_000_000_000;
 
 #[derive(Debug)]
 struct ClawMachine {
@@ -41,8 +40,8 @@ fn parse_prize(input: &str) -> IResult<&str, U64Vec2> {
 		tag("Prize: X="),
 		separated_pair(complete::u64, tag(", Y="), complete::u64).map(|(x, y)| {
 			U64Vec2::new(
-				x + if cfg!(test) { 0 } else { 10000000000000 },
-				y + if cfg!(test) { 0 } else { 10000000000000 },
+				x + if cfg!(test) { 0 } else { PRIZE_OFFSET },
+				y + if cfg!(test) { 0 } else { PRIZE_OFFSET },
 			)
 		}),
 	)(input)
@@ -91,40 +90,35 @@ pub fn process(input: &str) -> miette::Result<String> {
 	let total_spent: u64 = games
 		.iter()
 		.filter_map(|game| {
-			let solve = {
-				// Convert to f64
-				let (ax, ay) = (game.a.x as f64, game.a.y as f64);
-				let (bx, by) = (game.b.x as f64, game.b.y as f64);
-				let (px, py) = (game.prize.x as f64, game.prize.y as f64);
+			// Convert to f64
+			let (ax, ay) = (game.a.x as f64, game.a.y as f64);
+			let (bx, by) = (game.b.x as f64, game.b.y as f64);
+			let (px, py) = (game.prize.x as f64, game.prize.y as f64);
 
-				// Base determinant matrix [ax ay; bx by]
-				let mat = DMat2::from_cols_array(&[ax, ay, bx, by]);
-				let d = mat.determinant();
+			let mat_ab = DMat2::from_cols_array(&[ax, ay, bx, by]);
+			let d_ab = mat_ab.determinant();
 
-				// X-coordinate determinant [px py; bx by]
-				let mat_ac = DMat2::from_cols_array(&[px, py, bx, by]);
-				let d_ac = mat_ac.determinant();
+			// determinant of prize and button b
+			let mat_pb = DMat2::from_cols_array(&[px, py, bx, by]);
+			let d_pb = mat_pb.determinant();
 
-				// Y-coordinate determinant [ax ay; px py]
-				let mat_bc = DMat2::from_cols_array(&[ax, ay, px, py]);
-				let d_bc = mat_bc.determinant();
+			// determinant of coordinates a and p
+			let mat_ap = DMat2::from_cols_array(&[ax, ay, px, py]);
+			let d_ap = mat_ap.determinant();
 
-				let x = d_ac / d;
-				let y = d_bc / d;
-				if x.trunc() != x || y.trunc() != y {
-					Err(())
+			let count_btn_a = d_pb / d_ab;
+			let count_btn_b = d_ap / d_ab;
+
+			if count_btn_a.trunc() != count_btn_a || count_btn_b.trunc() != count_btn_b {
+				None
+			} else {
+				let max = if cfg!(test) { 100f64 } else { f64::INFINITY };
+				if count_btn_a > max || count_btn_b > max {
+					None
 				} else {
-					let max = if cfg!(test) { 100f64 } else { f64::INFINITY };
-					if x > max || y > max {
-						Err(())
-					} else {
-						Ok(U64Vec2::new(x as u64, y as u64))
-					}
+					Some(COST_A * count_btn_a.round() as u64 + COST_B * count_btn_b.round() as u64)
 				}
-			};
-			solve
-				.map(|value| (value * U64Vec2::new(COST_A, COST_B)).element_sum())
-				.ok()
+			}
 		})
 		.sum();
 
