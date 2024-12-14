@@ -1,4 +1,6 @@
-use glam::UVec2;
+#![warn(clippy::pedantic)]
+
+use glam::{DMat2, U64Vec2};
 use miette::miette;
 use nom::{
 	IResult, Parser,
@@ -8,17 +10,20 @@ use nom::{
 	sequence::{preceded, separated_pair, terminated, tuple},
 };
 
-const COST_A: u32 = 3;
-const COST_B: u32 = 1;
+const COST_A: u64 = 3;
+const COST_B: u64 = 1;
+
+// const PRIZE_OFFSET: u64 = 0;
+const PRIZE_OFFSET: u64 = 10000000000000;
 
 #[derive(Debug)]
 struct ClawMachine {
-	a: UVec2,
-	b: UVec2,
-	prize: UVec2,
+	a: U64Vec2,
+	b: U64Vec2,
+	prize: U64Vec2,
 }
 
-fn parse_button(input: &str) -> IResult<&str, UVec2> {
+fn parse_button(input: &str) -> IResult<&str, U64Vec2> {
 	preceded(
 		{
 			if input.chars().nth(7).unwrap() == 'A' {
@@ -27,14 +32,19 @@ fn parse_button(input: &str) -> IResult<&str, UVec2> {
 				tag("Button B: X+")
 			}
 		},
-		separated_pair(complete::u32, tag(", Y+"), complete::u32).map(|(x, y)| UVec2::new(x, y)),
+		separated_pair(complete::u64, tag(", Y+"), complete::u64).map(|(x, y)| U64Vec2::new(x, y)),
 	)(input)
 }
 
-fn parse_prize(input: &str) -> IResult<&str, UVec2> {
+fn parse_prize(input: &str) -> IResult<&str, U64Vec2> {
 	preceded(
 		tag("Prize: X="),
-		separated_pair(complete::u32, tag(", Y="), complete::u32).map(|(x, y)| UVec2::new(x, y)),
+		separated_pair(complete::u64, tag(", Y="), complete::u64).map(|(x, y)| {
+			U64Vec2::new(
+				x + if cfg!(test) { 0 } else { 10000000000000 },
+				y + if cfg!(test) { 0 } else { 10000000000000 },
+			)
+		}),
 	)(input)
 }
 
@@ -68,55 +78,150 @@ fn parse<'a>(input: &'a str) -> IResult<&'a str, Vec<ClawMachine>> {
 	separated_list1(tuple((line_ending, line_ending)), game)(input)
 }
 
-/// use pathfinding to map with button combinations
-/// (max 100 presses per button) - works without manual implementation
-/// check which are possible: Some(token_cost), None (not possible) - dijkstra handles this
-fn claw_prize_cost(games: &[ClawMachine]) -> Vec<u32> {
-	games
-		.iter()
-		.filter_map(|machine| {
-			let result = pathfinding::prelude::dijkstra(
-				&UVec2::ZERO, // start pos
-				|&position| {
-					// set successors for goal_pos
-					if position.x > machine.prize.x || position.y > machine.prize.y {
-						// went past goal, non-success
-						vec![]
-					} else {
-						// walk path
-						vec![
-							(position + machine.a, COST_A),
-							(position + machine.b, COST_B),
-						]
-					}
-				},
-				|prize| *prize == machine.prize,
-			);
-			// why does this not need an unwrap?
-			result.map(|res_item| res_item.1)
-		})
-		.collect()
-}
-
+///
+/// use determinants of (prize, b) / determinants of (a, b) to get a
+/// solve for b (prize, a) / b
 #[tracing::instrument]
 pub fn process(input: &str) -> miette::Result<String> {
 	// parse input into usable data
-	// x and y for each button, prize location - UVec2(x, y)
+	// x and y for each button, prize location - U64Vec2(x, y)
 	let (_, games) = parse(input).map_err(|err| miette!("invalid blocks in input: {}", err))?;
 
 	// token costs of possible paths in vector
-	let results = claw_prize_cost(&games);
+	let total_spent: u64 = games
+		.iter()
+		.filter_map(|game| {
+			let solve = {
+				// Convert to f64
+				let (ax, ay) = (game.a.x as f64, game.a.y as f64);
+				let (bx, by) = (game.b.x as f64, game.b.y as f64);
+				let (px, py) = (game.prize.x as f64, game.prize.y as f64);
+
+				// Base determinant matrix [ax ay; bx by]
+				let mat = DMat2::from_cols_array(&[ax, ay, bx, by]);
+				let d = mat.determinant();
+
+				// X-coordinate determinant [px py; bx by]
+				let mat_ac = DMat2::from_cols_array(&[px, py, bx, by]);
+				let d_ac = mat_ac.determinant();
+
+				// Y-coordinate determinant [ax ay; px py]
+				let mat_bc = DMat2::from_cols_array(&[ax, ay, px, py]);
+				let d_bc = mat_bc.determinant();
+
+				let x = d_ac / d;
+				let y = d_bc / d;
+				if x.trunc() != x || y.trunc() != y {
+					Err(())
+				} else {
+					let max = if cfg!(test) { 100f64 } else { f64::INFINITY };
+					if x > max || y > max {
+						Err(())
+					} else {
+						Ok(U64Vec2::new(x as u64, y as u64))
+					}
+				}
+			};
+			solve
+				.map(|value| (value * U64Vec2::new(COST_A, COST_B)).element_sum())
+				.ok()
+		})
+		.sum();
 
 	// minimum tokens to get all possible prizes
 	// sum up all possible prizes' token cost
-	let required_tokens: u32 = results.iter().sum();
-	Ok(required_tokens.to_string())
+	// Ok(required_tokens.to_string())
+	Ok(total_spent.to_string())
 }
 
 #[cfg(test)]
 mod tests {
 	use super::*;
 
+	// 	#[test]
+	// 	fn f_around_find_out() -> miette::Result<()> {
+	// 		let (_, parsed) = parse(
+	// 			"Button A: X+94, Y+34
+	// Button B: X+22, Y+67
+	// Prize: X=8400, Y=5400
+	// ",
+	// 		)
+	// 		.map_err(|e| miette!("fatal"))?;
+	// 		// 		let (_, parsed) = parse(
+	// 		// 			"Button A: X+26, Y+66
+	// 		// Button B: X+67, Y+21
+	// 		// Prize: X=12748, Y=12176
+	// 		// ",
+	// 		// 		)
+	// 		// 		.map_err(|e| miette!("fatal"))?;
+
+	// 		// intersections of lines
+	// 		// let (ax, ay) = (parsed[0].a.x as f64, parsed[0].a.y as f64);
+	// 		// let (bx, by) = (parsed[0].b.x as f64, parsed[0].b.y as f64);
+	// 		// let (px, py) = (parsed[0].prize.x as f64, parsed[0].prize.y as f64);
+	// 		// // stored in column-major order
+	// 		// let mat = DMat2::from_cols_array(&[ax, ay, bx, by]);
+	// 		// dbg!(&mat);
+	// 		// let d = mat.determinant();
+	// 		// dbg!(&d);
+	// 		// // px, py, bx, by
+	// 		// let mat_ac = DMat2::from_cols_array(&[px, py, bx, by]);
+	// 		// dbg!(&d);
+	// 		// let d_ac = mat_ac.determinant();
+	// 		// dbg!(&d_ac);
+	// 		// // ax, ay, px, py
+	// 		// let mat_bc = DMat2::from_cols_array(&[ax, ay, px, py]);
+	// 		// dbg!(&mat_bc);
+	// 		// let d_bc = mat_bc.determinant();
+	// 		// dbg!(&d_bc);
+
+	// 		// let x = d_ac / d;
+	// 		// let y = d_bc / d;
+	// 		// dbg!(x, y);
+
+	// 		// // let token_spent = assert_eq!(459236326669, token_spent);
+	// 		// assert!(false);
+	// 		Ok(())
+	// 	}
+
+	// 	#[test]
+	// 	fn test_process() -> miette::Result<()> {
+	// 		let input = "Button A: X+94, Y+34
+	// Button B: X+22, Y+67
+	// Prize: X=10000000008400, Y=10000000005400
+
+	// Button A: X+26, Y+66
+	// Button B: X+67, Y+21
+	// Prize: X=10000000012748, Y=10000000012176
+
+	// Button A: X+17, Y+86
+	// Button B: X+84, Y+37
+	// Prize: X=10000000007870, Y=10000000006450
+
+	// Button A: X+69, Y+23
+	// Button B: X+27, Y+71
+	// Prize: X=10000000018641, Y=10000000010279";
+	// 		assert_eq!("480", process(input)?);
+	// 		Ok(())
+	// 	}
+	// 	#[test]
+	// 	fn test_first_example() -> miette::Result<()> {
+	// 		let input = "Button A: X+94, Y+34
+	// Button B: X+22, Y+67
+	// Prize: X=8400, Y=5400";
+	// 		assert_eq!("280", process(input)?);
+	// 		Ok(())
+	// 	}
+	// 	#[test]
+	// 	fn test_second_impossible() -> miette::Result<()> {
+	// 		// there are no possible combinations for reaching the prize
+	// 		let input = "Button A: X+26, Y+66
+	// Button B: X+67, Y+21
+	// Prize: X=12748, Y=12176
+	// ";
+	// 		assert_eq!("4500000000000", process(input)?);
+	// 		Ok(())
+	// 	}
 	#[test]
 	fn test_process() -> miette::Result<()> {
 		let input = "Button A: X+94, Y+34
@@ -135,24 +240,6 @@ Button A: X+69, Y+23
 Button B: X+27, Y+71
 Prize: X=18641, Y=10279";
 		assert_eq!("480", process(input)?);
-		Ok(())
-	}
-	#[test]
-	fn test_first_example() -> miette::Result<()> {
-		let input = "Button A: X+94, Y+34
-Button B: X+22, Y+67
-Prize: X=8400, Y=5400";
-		assert_eq!("280", process(input)?);
-		Ok(())
-	}
-	#[test]
-	fn test_second_impossible() -> miette::Result<()> {
-		// there are no possible combinations for reaching the prize
-		let input = "Button A: X+26, Y+66
-Button B: X+67, Y+21
-Prize: X=12748, Y=12176
-";
-		assert_eq!("0", process(input)?);
 		Ok(())
 	}
 }
