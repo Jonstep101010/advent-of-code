@@ -16,7 +16,7 @@ struct Robot {
 	vel: (i32, i32),
 }
 
-fn print_grid(grid: &Vec<Vec<usize>>) {
+fn print_grid(grid: &[Vec<usize>]) {
 	for rows in grid.iter() {
 		println!("{:?}", rows);
 	}
@@ -24,7 +24,6 @@ fn print_grid(grid: &Vec<Vec<usize>>) {
 
 #[tracing::instrument]
 pub fn process(input: &str) -> miette::Result<String> {
-	// start_pos=x,y
 	let mut robots: Vec<Robot> = Vec::new();
 	for line in input.lines() {
 		let (p, v) = line.trim().split(' ').collect_tuple().unwrap();
@@ -36,11 +35,7 @@ pub fn process(input: &str) -> miette::Result<String> {
 			vel: (vx.parse().unwrap(), vy.parse().unwrap()),
 		});
 	}
-	// dbg!(&robots);
 	// const AREA: usize = WIDTH * HEIGHT;
-	const MH: i32 = (WIDTH / 2) as i32;
-	const MV: i32 = (HEIGHT / 2) as i32;
-	// dbg!(MH, MV);
 
 	let mut grid: Vec<Vec<usize>> = vec![vec![0; WIDTH]; HEIGHT];
 	for Robot { pos, .. } in &robots {
@@ -62,29 +57,38 @@ pub fn process(input: &str) -> miette::Result<String> {
 	// just so we don't accidentally shoot ourselves (again) ;(((((((())))))))
 	drop(robots);
 	let mut grid: Vec<Vec<usize>> = vec![vec![0; WIDTH]; HEIGHT];
-	// print_grid(&grid);
 	for robot in &new_robots {
 		grid[robot.pos.1 as usize][robot.pos.0 as usize] += 1;
 	}
 
 	print_grid(&grid);
-	// dbg!(lt, rt, lb, rb);
 	let (mut lt, mut rt, mut lb, mut rb) = (0, 0, 0, 0);
+	const MH: i32 = (WIDTH / 2) as i32;
+	const MV: i32 = (HEIGHT / 2) as i32;
 	for robot in &new_robots {
 		let (x, y) = (robot.pos.0, robot.pos.1);
+		use std::cmp::Ordering::*;
 
-		if x < MH {
-			if y < MV {
-				lb += 1;
-			} else if y > MV {
-				lt += 1;
-			}
-		} else if x > MH {
-			if y < MV {
-				rt += 1;
-			} else if y > MV {
-				rb += 1;
-			}
+		match x.cmp(&MH) {
+			Less => match y.cmp(&MV) {
+				Less => {
+					lb += 1;
+				}
+				Greater => {
+					lt += 1;
+				}
+				Equal => {}
+			},
+			Greater => match y.cmp(&MV) {
+				Less => {
+					rt += 1;
+				}
+				Greater => {
+					rb += 1;
+				}
+				Equal => {}
+			},
+			_ => {}
 		}
 	}
 	let safety_factor = rt * lt * rb * lb;
