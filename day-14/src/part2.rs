@@ -48,62 +48,73 @@ pub fn process(input: &str) -> miette::Result<String> {
 	}
 	// const AREA: usize = WIDTH * HEIGHT;
 
-	let mut grid: Vec<Vec<usize>> = vec![vec![0; WIDTH]; HEIGHT];
-	for Robot { pos, .. } in &robots {
-		grid[pos.1 as usize][pos.0 as usize] = 1;
-	}
-	print_grid(&grid);
-	println!(" -  - - -- - - -- --  -");
-	let mut new_robots: Vec<Robot> = Vec::new();
-	for robot in &robots {
-		new_robots.push(Robot {
-			pos: (
-				// fuck, modulo in python was so much easier...
-				((robot.pos.0 + (robot.vel.0 * 100)).rem_euclid(WIDTH as i32)),
-				((robot.pos.1 + (robot.vel.1 * 100)).rem_euclid(HEIGHT as i32)),
-			),
-			vel: robot.vel,
-		});
-	}
-	// just so we don't accidentally shoot ourselves (again) ;(((((((())))))))
-	drop(robots);
-	let mut grid: Vec<Vec<usize>> = vec![vec![0; WIDTH]; HEIGHT];
-	for robot in &new_robots {
-		grid[robot.pos.1 as usize][robot.pos.0 as usize] += 1;
-	}
-
-	print_grid(&grid);
-	let (mut lt, mut rt, mut lb, mut rb) = (0, 0, 0, 0);
-	const MH: i32 = (WIDTH / 2) as i32;
-	const MV: i32 = (HEIGHT / 2) as i32;
-	for robot in &new_robots {
-		let (x, y) = (robot.pos.0, robot.pos.1);
-		use std::cmp::Ordering::*;
-
-		match x.cmp(&MH) {
-			Less => match y.cmp(&MV) {
-				Less => {
-					lb += 1;
-				}
-				Greater => {
-					lt += 1;
-				}
-				Equal => {}
-			},
-			Greater => match y.cmp(&MV) {
-				Less => {
-					rt += 1;
-				}
-				Greater => {
-					rb += 1;
-				}
-				Equal => {}
-			},
-			_ => {}
+	// let mut grid: Vec<Vec<usize>> = vec![vec![0; WIDTH]; HEIGHT];
+	// for Robot { pos, .. } in &robots {
+	// 	grid[pos.1 as usize][pos.0 as usize] = 1;
+	// }
+	// print_grid(&grid);
+	// println!(" -  - - -- - - -- --  -");
+	const AREA: usize = WIDTH * HEIGHT;
+	for i in 0..AREA {
+		let mut new_robots: Vec<Robot> = Vec::new();
+		for robot in &robots {
+			new_robots.push(Robot {
+				pos: (
+					// fuck, modulo in python was so much easier...
+					((robot.pos.0 + (robot.vel.0 * i as i32)).rem_euclid(WIDTH as i32)),
+					((robot.pos.1 + (robot.vel.1 * i as i32)).rem_euclid(HEIGHT as i32)),
+				),
+				vel: robot.vel,
+			});
+		}
+		let mut grid: Vec<Vec<usize>> = vec![vec![0; WIDTH]; HEIGHT];
+		for robot in &new_robots {
+			grid[robot.pos.1 as usize][robot.pos.0 as usize] += 1;
+		}
+		if only_unique_grid(&grid) {
+			return Ok(i.to_string());
 		}
 	}
-	let safety_factor = rt * lt * rb * lb;
-	Ok(safety_factor.to_string())
+	// just so we don't accidentally shoot ourselves (again) ;(((((((())))))))
+	// drop(robots);
+	// let mut grid: Vec<Vec<usize>> = vec![vec![0; WIDTH]; HEIGHT];
+	// for robot in &new_robots {
+	// 	grid[robot.pos.1 as usize][robot.pos.0 as usize] += 1;
+	// }
+
+	// print_grid(&grid);
+	// let (mut lt, mut rt, mut lb, mut rb) = (0, 0, 0, 0);
+	// const MH: i32 = (WIDTH / 2) as i32;
+	// const MV: i32 = (HEIGHT / 2) as i32;
+	// for robot in &new_robots {
+	// 	let (x, y) = (robot.pos.0, robot.pos.1);
+	// 	use std::cmp::Ordering::*;
+
+	// 	match x.cmp(&MH) {
+	// 		Less => match y.cmp(&MV) {
+	// 			Less => {
+	// 				lb += 1;
+	// 			}
+	// 			Greater => {
+	// 				lt += 1;
+	// 			}
+	// 			Equal => {}
+	// 		},
+	// 		Greater => match y.cmp(&MV) {
+	// 			Less => {
+	// 				rt += 1;
+	// 			}
+	// 			Greater => {
+	// 				rb += 1;
+	// 			}
+	// 			Equal => {}
+	// 		},
+	// 		_ => {}
+	// 	}
+	// }
+	// let safety_factor = rt * lt * rb * lb;
+	// Ok(safety_factor.to_string())
+	Ok("0".to_string())
 }
 
 #[cfg(test)]
