@@ -95,19 +95,16 @@ pub fn process(input: &str) -> miette::Result<String> {
 			let (bx, by) = (game.b.x as f64, game.b.y as f64);
 			let (px, py) = (game.prize.x as f64, game.prize.y as f64);
 
-			let mat_ab = DMat2::from_cols_array(&[ax, ay, bx, by]);
-			let d_ab = mat_ab.determinant();
-
 			// determinant of prize and button b
-			let mat_pb = DMat2::from_cols_array(&[px, py, bx, by]);
+			let mat_pb = DMat2::from_cols_array(&[px, bx, py, by]);
 			let d_pb = mat_pb.determinant();
 
-			// determinant of coordinates a and p
-			let mat_ap = DMat2::from_cols_array(&[ax, ay, px, py]);
-			let d_ap = mat_ap.determinant();
+			let mat_ab = DMat2::from_cols_array(&[ax, bx, ay, by]);
+			let d_ab = mat_ab.determinant();
 
 			let count_btn_a = d_pb / d_ab;
-			let count_btn_b = d_ap / d_ab;
+			// solve for b
+			let count_btn_b = (px - (ax * count_btn_a)) / bx;
 
 			if count_btn_a.trunc() != count_btn_a || count_btn_b.trunc() != count_btn_b {
 				None
