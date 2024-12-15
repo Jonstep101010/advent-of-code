@@ -1,6 +1,7 @@
 #![warn(clippy::pedantic)]
 
 use petgraph::prelude::*;
+use petgraph::visit::IntoNodeReferences;
 use std::collections::HashMap;
 use std::io::Write;
 
@@ -38,6 +39,7 @@ fn create_graph_directions(map: &HashMap<(i32, i32), char>) -> UnGraphMap<(i32, 
 	graph
 }
 
+#[allow(dead_code)]
 fn write_graph_file(
 	graph: &Graph<Vec<(i32, i32)>, (), Undirected, NodeIndex>,
 ) -> miette::Result<()> {
@@ -49,17 +51,33 @@ fn write_graph_file(
 #[tracing::instrument]
 pub fn process(input: &str) -> miette::Result<String> {
 	let map = parse(input);
-	dbg!(&map);
-	// petgraph? - condense graph
+	// could directly create graph from input, but this way we can debug the map
 	let graph = create_graph_directions(&map);
 	// every plant is a component of Node, part of a garden, collect gardens in graph
 	let graph_of_gardens_with_plants: Graph<Vec<(i32, i32)>, (), Undirected, NodeIndex> =
 		petgraph::algo::condensation(graph.clone().into_graph::<NodeIndex>(), false);
-	write_graph_file(&graph_of_gardens_with_plants)?;
-	// area price = perimeter * amount inside perimeter
-	// sum of all area prices
-	let mut total_price = 0;
-	Ok(total_price.to_string())
+	#[cfg(test)]
+	{
+		write_graph_file(&graph_of_gardens_with_plants)?;
+	}
+	let price_all_areas: usize = graph_of_gardens_with_plants
+		.node_references() // for all gardens
+		.map(|(_, garden)| {
+			let area = garden.len();
+			let perimeter = garden
+				.iter()
+				.map(|&(x, y)| {
+					// for each plant in garden, count the number of neighbors
+					// subtract from 4 to get the number of edges
+					4 - graph.neighbors((x, y)).count()
+				})
+				.sum::<usize>();
+			// area price = perimeter * amount inside perimeter
+			perimeter * area
+		})
+		// .count()// number of gardens
+		.sum();
+	Ok(price_all_areas.to_string())
 }
 
 #[cfg(test)]
