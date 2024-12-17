@@ -140,17 +140,10 @@ impl Warehouse {
 	pub fn run(&mut self) {}
 	pub fn checksum(&self) -> u64 {
 		let mut box_result: u64 = 0;
-		dbg!(self.size);
-		let (height, _width) = self.size;
-		// let (_width, height) = self.size;
+		let (_, height) = self.size;
 		for single_box in &self.boxes {
-			dbg!(single_box.0);
 			box_result += single_box.0 as u64;
-			dbg!(box_result);
-			dbg!(height - single_box.1 as usize);
-			dbg!(height);
-			box_result += ((height - 1) - single_box.1 as usize) as u64 * 100;
-			dbg!(box_result);
+			box_result += (height - (single_box.1 + 1) as usize) as u64 * 100;
 		}
 		box_result
 	}
@@ -171,11 +164,8 @@ fn find_robot(grid: &Grid<char>) -> Pos {
 
 fn find_items(grid: &Grid<char>, item: char) -> HashSet<Pos> {
 	let mut positions = HashSet::new();
-	for (y, row) in grid.iter_rows().enumerate() {
-		for (x, &c) in row.enumerate() {
-			// if x == 2 && y == 4 {
-			// 	dbg!("{:?}", c);
-			// }
+	for (x, row) in grid.iter_rows().enumerate() {
+		for (y, &c) in row.enumerate() {
 			if c == item {
 				positions.insert(Pos(x as i32, y as i32));
 			}
@@ -184,29 +174,15 @@ fn find_items(grid: &Grid<char>, item: char) -> HashSet<Pos> {
 	positions
 }
 
-// assert_eq!(grid[(5, 1)], 'O');
-// assert_eq!(grid[(4, 4)], '@');
-// // <vv>
-// dbg!(&movements[0..9]);
-// assert_eq!(
-// 	&[
-// Direction::Left,
-// Direction::Down,
-// Direction::Down,
-// Direction::Right,
-// 	],
-// 	&movements[0..=3] /* or 0..4 for first four */
-// );
-
 const WALL: char = '#';
 const BOX: char = 'O';
 #[tracing::instrument]
 pub fn process(input: &str) -> miette::Result<String> {
 	let (grid, movements) = parse(input)?;
-	println!("{:?}", grid);
+	// println!("{:?}", grid);
 	let robot_start = find_robot(&grid);
 	let walls = find_items(&grid, WALL);
-	eprintln!("{:?}", walls);
+	// eprintln!("{:?}", walls);
 	let boxes = find_items(&grid, BOX);
 	assert_eq!(37, walls.len());
 	assert_eq!(21, boxes.len());
@@ -241,51 +217,6 @@ mod tests {
 
 	#[test]
 	fn test_stuff() {}
-	// 	#[test]
-	// 	fn test_g1() {
-	// 		let mut grid = grid![[1, 2, 3]
-	// [4, 5, 6]
-	// [7, 8, 9]];
-	// 		grid.flip_cols();
-	// 		assert_eq!(grid[(2, 0)], 9);
-	// 		assert_eq!(grid.size(), (3, 3));
-	// 		eprintln!("default");
-	// 		dbg!(&grid);
-	// 		assert_eq!(6, grid[(1, 2)]);
-	// 		let grid = grid![[1,2,3][4,5,6][7,8,9]];
-	// 		dbg!(&grid);
-	// 		assert_eq!(grid[(1, 0)], 2);
-	// 	}
-	// #[test]
-	// fn test_g2() {
-	// 	// 777 is y_max / lines first
-	// 	// 444 is in between them
-	// 	// 111 is y_min / lines last
-	// 	// we want to access as first the last lines
-	// 	let mut grid = grid_cm![];
-	// 	grid.insert_col(0, vec![7, 8, 9]);
-	// 	grid.insert_col(0, vec![4, 5, 6]);
-	// 	grid.insert_col(0, vec![1, 2, 3]);
-	// 	// assert_eq!(grid, grid![[7,8,9][4,5,6][1,2,3]]);
-	// 	// assert_eq!();
-	// 	// y, x
-	// 	assert_eq!(grid[(0, 1)], 2);
-	// 	dbg!(&grid);
-	// 	grid.transpose();
-	// 	dbg!(&grid);
-	// 	assert_eq!(grid[(1, 0)], 2);
-	// 	dbg!(&grid);
-	// 	grid.insert_row(3, vec![10]);
-	// 	assert_eq!(grid.size(), (3, 3));
-	// }
-	// #[test]
-	// fn test_contains() {
-	// 	let mut walls = HashSet::new();
-	// 	walls.insert(Pos(2, 4));
-
-	// 	assert!(walls.contains(&Pos(2, 4)));
-	// }
-
 	#[test]
 	fn test_process() -> miette::Result<()> {
 		let input = "##########
@@ -313,49 +244,16 @@ v^^>>><<^^<>>^v^<v^vv<>v^<<>^<^v^v><^<<<><<^<v><v<>vv>>v><v^<vv<>v^<<^";
 		Ok(())
 	}
 	#[test]
-	fn test_grid() {
-		// let (mut grid, _) = parse(input).unwrap();
-		let mut grid_rev_stack = grid_cm![
-		['.', '.', '.', '.', '.', '.', '#']
-		['.', '.', 'O', '.', '.', '.', '#']
-		['#', '#', '#', '#', '#', '#', '#']
-		];
-		// y, x
-		assert_eq!(grid_rev_stack[(1, 2)], 'O');
-		grid_rev_stack.flip_rows();
-		eprintln!("before");
-		dbg!(&grid_rev_stack);
-		grid_rev_stack.rotate_half();
-		dbg!(&grid_rev_stack);
-		let mut grid_two = grid![
-		[ '#', '#', '#', '#', '#', '#', '#']
-		[ '#', '.', '.', '.', 'O', '.', '.']
-		[ '#', '.', '.', '.', '.', '.', '.']
-		];
-		// y, x
-		assert_eq!(grid_two[(1, 4)], 'O');
-		dbg!(&grid_two);
-		let input = "#######
-#...O..
-#......
-";
-		let grid = parse_grid(input);
-		assert_eq!(grid_two, grid);
-		// assert_eq!(expected_grid[(2, 1)], grid[(2, 1)]);
-	}
-	#[test]
 	fn test_checksum_one() {
 		let input = "#######
 #...O..
 #......
 
 <>";
-		let (mut grid, movements) = parse(input).unwrap();
-		for row in grid.iter_rows() {
-			dbg!(row);
-		}
+		let (mut grid, _) = parse(input).unwrap();
+
 		assert_eq!(grid.size(), (grid.rows(), grid.cols()));
-		assert_eq!((grid.rows(), grid.cols()), (3, 7));
+		assert_eq!((grid.rows(), grid.cols()), (7, 3));
 		let (walls, boxes) = (find_items(&grid, WALL), find_items(&grid, BOX));
 		let maze = Warehouse {
 			moves: vec![],
