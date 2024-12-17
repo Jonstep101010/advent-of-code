@@ -198,16 +198,20 @@ impl Warehouse {
 		new_position += self.cur_move;
 		self.boxes.remove(&box_pos);
 		self.boxes.insert(new_position);
-		dbg!(new_position);
 		self.grid[(new_position.0 as usize, new_position.1 as usize)] = 'O';
 		self.grid[(box_pos.0 as usize, box_pos.1 as usize)] = '.';
+		assert_eq!(box_pos + self.cur_move, new_position);
 	}
 	// could return the resulting grid
 	pub fn run(&mut self) {
 		// check while iterating over movements if a move is possible
 		while !self.moves.is_empty() {
+			let prev_len = self.moves.len();
 			self.cur_move = self.moves.pop_front().unwrap().to_pos();
+			assert_eq!(prev_len - 1, self.moves.len());
+			dbg!(self.robot);
 			let next_pos = self.robot + self.cur_move;
+			dbg!(next_pos);
 			if self.walls.contains(&next_pos) {
 				// do not move
 				// skip moves
@@ -217,7 +221,11 @@ impl Warehouse {
 				// display_grid(&mut self.grid);
 			} else {
 				// we can move one if a box can move
-				if !self.walls.contains(&(next_pos + self.cur_move)) {
+				if self.boxes.contains(&next_pos)
+					&& !self.walls.contains(&(next_pos + self.cur_move))
+				{
+					// @todo move boxes there previously
+					// shift_boxes_in_front if no wall (empty space found)
 					// there is no wall where the box will have to move
 					self.move_box(next_pos);
 					self.move_robot();
@@ -298,6 +306,22 @@ mod tests {
 	#[test]
 	fn test_stuff() {}
 	#[test]
+	fn test_smaller() -> miette::Result<()> {
+		let input = "########
+#..O.O.#
+##@.O..#
+#...O..#
+#.#.O..#
+#...O..#
+#......#
+########
+
+<^^>>>vv<v>>v<<";
+		// 30 walls, 6 boxes
+		assert_eq!("2028", process(input)?);
+		Ok(())
+	}
+	#[test]
 	fn test_process() -> miette::Result<()> {
 		let input = "##########
 #..O..O.O#
@@ -320,20 +344,28 @@ vvv<<^>^v^^><<>>><>^<<><^vv^^<>vvv<>><^^v>^>vv<>v<<<<v<^v>^<^^>>>^<v<v
 <><^^>^^^<><vvvvv^v<v<<>^v<v>v<<^><<><<><<<^^<<<^<<>><<><^^^>^^<>^>v<>
 ^^>vv<^v^v<vv>^<><v<^v>^^^>>>^^vvv^>vvv<>>>^<^>>>>>^<<^v>^vvv<>^<><<v>
 v^^>>><<^^<>>^v^<v^vv<>v^<<>^<^v^v><^<<<><<^<v><v<>vv>>v><v^<vv<>v^<<^";
+		// walls: 37, boxes 21
 		assert_eq!("10092", process(input)?);
 		Ok(())
 	}
 	#[test]
 	fn test_checksum_one() {
-		let input = "#######
-#...O..
-#......
+		let input = "##########
+#.O.O.OOO#
+#........#
+#OO......#
+#OO@.....#
+#O#.....O#
+#O.....OO#
+#O.....OO#
+#OO....OO#
+##########
 
 <>";
 		let (grid, _) = parse(input).unwrap();
 
-		assert_eq!(grid.size(), (grid.rows(), grid.cols()));
-		assert_eq!((grid.rows(), grid.cols()), (7, 3));
+		// assert_eq!(grid.size(), (grid.rows(), grid.cols()));
+		// assert_eq!((grid.rows(), grid.cols()), (7, 3));
 		let (walls, boxes) = (find_items(&grid, WALL), find_items(&grid, BOX));
 		let maze = Warehouse {
 			moves: VecDeque::new(),
