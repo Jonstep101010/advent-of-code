@@ -1,5 +1,6 @@
 use std::{
 	collections::{HashSet, VecDeque},
+	io::Write,
 	ops::AddAssign,
 };
 
@@ -21,6 +22,20 @@ pub fn print_grid(grid: &mut Grid<char>) {
 pub fn dbg_grid(grid: &mut Grid<char>) {
 	grid.rotate_left();
 	dbg!(&grid);
+	grid.rotate_right();
+}
+
+fn display_grid(grid: &mut Grid<char>) {
+	// clear screen
+	print!("\x1B[2J\x1B[1;1H");
+	grid.rotate_left();
+	for row in grid.iter_rows() {
+		for &c in row {
+			print!("{}", c);
+		}
+		println!();
+	}
+	std::io::stdout().flush().unwrap();
 	grid.rotate_right();
 }
 
@@ -178,10 +193,12 @@ impl Warehouse {
 	}
 	fn move_box(&mut self, box_pos: Pos) {
 		// update pos using AddAssign of cur_move
+		dbg!(box_pos);
 		let mut new_position = box_pos;
 		new_position += self.cur_move;
 		self.boxes.remove(&box_pos);
 		self.boxes.insert(new_position);
+		dbg!(new_position);
 		self.grid[(new_position.0 as usize, new_position.1 as usize)] = 'O';
 		self.grid[(box_pos.0 as usize, box_pos.1 as usize)] = '.';
 	}
@@ -197,15 +214,20 @@ impl Warehouse {
 			} else if !self.boxes.contains(&next_pos) {
 				// we can definitely move
 				self.move_robot();
+				// display_grid(&mut self.grid);
 			} else {
 				// we can move one if a box can move
 				if !self.walls.contains(&(next_pos + self.cur_move)) {
 					// there is no wall where the box will have to move
 					self.move_box(next_pos);
 					self.move_robot();
+					// display_grid(&mut self.grid);
 				} else {
 					// we cannot move because the box cannot move
 				}
+			}
+			if self.moves.is_empty() {
+				break;
 			}
 		}
 	}
@@ -255,11 +277,11 @@ pub fn process(input: &str) -> miette::Result<String> {
 	let walls = find_items(&grid, WALL);
 	// eprintln!("{:?}", walls);
 	let boxes = find_items(&grid, BOX);
-	assert_eq!(37, walls.len());
-	assert_eq!(21, boxes.len());
-	assert!(walls.contains(&Pos(2, 4)));
-	assert!(boxes.contains(&Pos(1, 3)));
-	assert!(boxes.contains(&Pos(1, 4)));
+	// assert_eq!(37, walls.len());
+	// assert_eq!(21, boxes.len());
+	// assert!(walls.contains(&Pos(2, 4)));
+	// assert!(boxes.contains(&Pos(1, 3)));
+	// assert!(boxes.contains(&Pos(1, 4)));
 	let mut maze = Warehouse::new(movements, robot_start, boxes, walls, grid.size(), grid);
 	maze.run(); // we might assign this later
 	// 100 * distance from top edge + distance from left (x)
@@ -340,7 +362,7 @@ v^^>>><<^^<>>^v^<v^vv<>v^<<>^<^v^v><^<<<><<^<v><v<>vv>>v><v^<vv<>v^<<^";
 
 <>";
 		let (mut grid, _movements) = parse(input).unwrap();
-		dbg_grid(&mut grid);
+		// dbg_grid(&mut grid);
 		let robot_pos = find_robot(&grid);
 		// Pos(3, 5)
 		assert_eq!(Pos(3, 5), robot_pos);
