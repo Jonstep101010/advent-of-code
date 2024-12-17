@@ -1,4 +1,7 @@
-use std::collections::HashSet;
+use std::{
+	collections::{HashSet, VecDeque},
+	ops::AddAssign,
+};
 
 use grid::{Grid, grid};
 use itertools::Itertools;
@@ -53,17 +56,20 @@ pub fn parse_grid(input: &str) -> Grid<char> {
 	// where the later the line, the lower the shelf will be
 	// each line's first character should have an x of 0
 	let mut new = grid![];
-	for (lc, row) in input.lines().rev().enumerate() {
+	for row in input.lines().rev() {
 		let items = row.chars().collect_vec();
 		new.push_row(items);
-		eprintln!("lc: {lc}");
-		for i in 0..row.len() {
-			dbg!(new[(lc, i)]);
-		}
 	}
-	dbg!(&new);
+	// for debugging
+	// for (lc, row) in input.lines().rev().enumerate() {
+	// 	let items = row.chars().collect_vec();
+	// 	new.push_row(items);
+	// 	for i in 0..row.len() {
+	// 		dbg!(new[(lc, i)]);
+	// 	}
+	// }
 	new.transpose();
-	dbg!(&new);
+	print_grid(&mut new);
 	new
 }
 
@@ -76,12 +82,12 @@ enum Direction {
 }
 
 impl Direction {
-	fn to_offset(self) -> (i32, i32) {
+	fn to_pos(self) -> Pos {
 		match self {
-			Direction::Up => (0, 1),
-			Direction::Right => (1, 0),
-			Direction::Down => (0, -1),
-			Direction::Left => (-1, 0),
+			Direction::Up => Pos(0, 1),
+			Direction::Right => Pos(1, 0),
+			Direction::Down => Pos(0, -1),
+			Direction::Left => Pos(-1, 0),
 		}
 	}
 }
@@ -109,15 +115,40 @@ fn parse(input: &str) -> miette::Result<(Grid<char>, Vec<Direction>)> {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 struct Pos(i32, i32);
+use std::ops::Add;
+
 type Move = Pos;
+
+impl Add for Pos {
+	type Output = Self;
+
+	fn add(self, other: Self) -> Self {
+		Pos(self.0 + other.0, self.1 + other.1)
+	}
+}
+
+impl AddAssign for Pos {
+	fn add_assign(&mut self, rhs: Self) {
+		self.0 += rhs.0;
+		self.1 += rhs.1;
+	}
+}
+
+impl Into<(i32, i32)> for Pos {
+	fn into(self) -> (i32, i32) {
+		(self.0, self.1)
+	}
+}
 
 #[derive(Debug, Clone)]
 struct Warehouse {
-	moves: Vec<Direction>,
+	moves: VecDeque<Direction>,
 	robot: Pos,
 	boxes: HashSet<Pos>,
 	walls: HashSet<Pos>,
 	size: (usize, usize),
+	grid: Grid<char>,
+	cur_move: Pos,
 }
 
 impl Warehouse {
@@ -127,17 +158,57 @@ impl Warehouse {
 		boxes: HashSet<Pos>,
 		walls: HashSet<Pos>,
 		size: (usize, usize),
+		grid: Grid<char>,
 	) -> Self {
+		let cur_move = moves[0].clone().to_pos();
 		Self {
-			moves,
+			moves: moves.into(),
 			robot,
 			boxes,
 			walls,
 			size,
+			grid,
+			cur_move,
 		}
 	}
+	fn move_robot(&mut self) {
+		self.grid[(self.robot.0 as usize, self.robot.1 as usize)] = '.';
+		self.robot += self.cur_move;
+		self.grid[(self.robot.0 as usize, self.robot.1 as usize)] = '#';
+	}
+	fn move_box(&mut self, box_pos: Pos) {
+		// update pos using AddAssign of cur_move
+		let mut new_position = box_pos;
+		new_position += self.cur_move;
+		self.boxes.remove(&box_pos);
+		self.boxes.insert(new_position);
+		self.grid[(new_position.0 as usize, new_position.1 as usize)] = 'O';
+		self.grid[(box_pos.0 as usize, box_pos.1 as usize)] = '.';
+	}
 	// could return the resulting grid
-	pub fn run(&mut self) {}
+	pub fn run(&mut self) {
+		// check while iterating over movements if a move is possible
+		while !self.moves.is_empty() {
+			self.cur_move = self.moves.pop_front().unwrap().to_pos();
+			let next_pos = self.robot + self.cur_move;
+			if self.walls.contains(&next_pos) {
+				// do not move
+				// skip moves
+			} else if !self.boxes.contains(&next_pos) {
+				// we can definitely move
+				self.move_robot();
+			} else {
+				// we can move one if a box can move
+				if !self.walls.contains(&(next_pos + self.cur_move)) {
+					// there is no wall where the box will have to move
+					self.move_box(next_pos);
+					self.move_robot();
+				} else {
+					// we cannot move because the box cannot move
+				}
+			}
+		}
+	}
 	pub fn checksum(&self) -> u64 {
 		let mut box_result: u64 = 0;
 		let (_, height) = self.size;
@@ -189,29 +260,16 @@ pub fn process(input: &str) -> miette::Result<String> {
 	assert!(walls.contains(&Pos(2, 4)));
 	assert!(boxes.contains(&Pos(1, 3)));
 	assert!(boxes.contains(&Pos(1, 4)));
-	let mut maze = Warehouse::new(movements, robot_start, boxes, walls, grid.size());
+	let mut maze = Warehouse::new(movements, robot_start, boxes, walls, grid.size(), grid);
 	maze.run(); // we might assign this later
 	// 100 * distance from top edge + distance from left (x)
 	let box_checksum = maze.checksum();
 	Ok(box_checksum.to_string())
 }
 
-// fn print_xy_increment(grid: &Grid<char>) {
-// 	for
-// }
-// fn print_yx_increment(grid: &Grid<char>) {
-// 	let mut y = 0;
-// 	for _ in grid[(y, x)] {
-// let mut x = 0;
-// for grid[(y, x)] {
-// 	eprint!("{}",grid[(y, x)] );
-// }
-// 	}
-// }
-
 #[cfg(test)]
 mod tests {
-	use std::vec;
+	use std::{collections::vec_deque, vec};
 
 	use super::*;
 
@@ -250,17 +308,19 @@ v^^>>><<^^<>>^v^<v^vv<>v^<<>^<^v^v><^<<<><<^<v><v<>vv>>v><v^<vv<>v^<<^";
 #......
 
 <>";
-		let (mut grid, _) = parse(input).unwrap();
+		let (grid, _) = parse(input).unwrap();
 
 		assert_eq!(grid.size(), (grid.rows(), grid.cols()));
 		assert_eq!((grid.rows(), grid.cols()), (7, 3));
 		let (walls, boxes) = (find_items(&grid, WALL), find_items(&grid, BOX));
 		let maze = Warehouse {
-			moves: vec![],
+			moves: VecDeque::new(),
 			robot: Pos(0, 0),
 			boxes,
 			walls,
 			size: grid.size(),
+			grid,
+			cur_move: Pos(0, 0),
 		};
 		let box_check = maze.checksum();
 		assert_eq!(104, box_check);
@@ -280,23 +340,38 @@ v^^>>><<^^<>>^v^<v^vv<>v^<<>^<^v^v><^<<<><<^<v><v<>vv>>v><v^<vv<>v^<<^";
 
 <>";
 		let (mut grid, _movements) = parse(input).unwrap();
-		for row in grid.iter_rows() {
-			dbg!(row);
-		}
-		// assert_eq!(grid.size(), (grid.rows(), grid.cols()));
-		// assert_eq!((grid.rows(), grid.cols()), (3, 7));
+		dbg_grid(&mut grid);
 		let robot_pos = find_robot(&grid);
 		// Pos(3, 5)
 		assert_eq!(Pos(3, 5), robot_pos);
 		let (walls, boxes) = (find_items(&grid, WALL), find_items(&grid, BOX));
-		let maze = Warehouse {
-			moves: vec![],
+		let _maze = Warehouse {
+			moves: VecDeque::new(),
 			robot: robot_pos,
 			boxes,
 			walls,
 			size: grid.size(),
+			grid,
+			cur_move: Pos(0, 0),
 		};
-		let box_check = maze.checksum();
+		let box_check = _maze.checksum();
 		assert_eq!(10092, box_check);
+	}
+	#[test]
+	fn test_find_robot() {
+		let input = "##########
+#.O.O.OOO#
+#........#
+#OO......#
+#OO@.....#
+#O#.....O#
+#O.....OO#
+#O.....OO#
+#OO....OO#
+##########
+";
+		let grid = parse_grid(input);
+		let robot_pos = find_robot(&grid);
+		assert_eq!(Pos(3, 5), robot_pos);
 	}
 }
