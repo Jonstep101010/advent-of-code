@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use grid::{Grid, GridRowIter, grid};
+use grid::{Grid, grid};
 use itertools::Itertools;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -12,7 +12,7 @@ enum Direction {
 }
 
 impl Direction {
-	fn to_offset(&self) -> (i32, i32) {
+	fn to_offset(self) -> (i32, i32) {
 		match self {
 			Direction::Up => (0, 1),
 			Direction::Right => (1, 0),
@@ -26,6 +26,7 @@ fn parse(input: &str) -> miette::Result<(Grid<char>, Vec<Direction>)> {
 	let (g, ins) = input.split_once("\n\n").unwrap();
 	// an x, y grid (row-major)
 	let mut grid = grid![];
+	// @follow-up need to start from end and go back
 	for (lc, row) in g.lines().enumerate() {
 		let items = row.chars().collect_vec();
 		// dbg!(&items);
@@ -37,6 +38,7 @@ fn parse(input: &str) -> miette::Result<(Grid<char>, Vec<Direction>)> {
 	}
 	// grid is y top to bottom!
 	grid.flip_rows();
+	// grid.rotate_half();
 	// now cartesian :)
 	// dbg!(&grid);
 	let instructions = ins
@@ -59,20 +61,47 @@ type Move = Pos;
 
 #[derive(Debug, Clone)]
 struct Warehouse {
-	moves: Vec<Move>,
+	moves: Vec<Direction>,
 	robot: Pos,
 	boxes: HashSet<Pos>,
 	walls: HashSet<Pos>,
+	size: (usize, usize),
 }
 
 impl Warehouse {
-	fn new(moves: Vec<Move>, robot: Pos, boxes: HashSet<Pos>, walls: HashSet<Pos>) -> Self {
+	fn new(
+		moves: Vec<Direction>,
+		robot: Pos,
+		boxes: HashSet<Pos>,
+		walls: HashSet<Pos>,
+		size: (usize, usize),
+	) -> Self {
 		Self {
 			moves,
 			robot,
 			boxes,
 			walls,
+			size,
 		}
+	}
+	// could return the resulting grid
+	pub fn run(&mut self) {
+
+	}
+	pub fn checksum(&self) -> u64 {
+		let mut box_result: u64 = 0;
+		dbg!(self.size);
+		let (height, _width) = self.size;
+		for single_box in &self.boxes {
+			dbg!(single_box.0);
+			box_result += single_box.0 as u64;
+			dbg!(box_result);
+			dbg!(height - single_box.1 as usize);
+			dbg!(height);
+			box_result += ((height - 1) - single_box.1 as usize) as u64 * 100;
+			dbg!(box_result);
+		}
+		box_result
 	}
 }
 
@@ -133,9 +162,11 @@ pub fn process(input: &str) -> miette::Result<String> {
 	assert!(walls.contains(&Pos(2, 4)));
 	assert!(boxes.contains(&Pos(1, 3)));
 	assert!(boxes.contains(&Pos(1, 4)));
-	// let (mut walls, mut boxes)
-	todo!();
-	// Ok(box_checksum.to_string())
+	let mut maze = Warehouse::new(movements, robot_start, boxes, walls, grid.size());
+	maze.run();// we might assign this later
+	// 100 * distance from top edge + distance from left (x)
+	let box_checksum = maze.checksum();
+	Ok(box_checksum.to_string())
 }
 
 #[cfg(test)]
@@ -175,5 +206,63 @@ vvv<<^>^v^^><<>>><>^<<><^vv^^<>vvv<>><^^v>^>vv<>v<<<<v<^v>^<^^>>>^<v<v
 v^^>>><<^^<>>^v^<v^vv<>v^<<>^<^v^v><^<<<><<^<v><v<>vv>>v><v^<vv<>v^<<^";
 		assert_eq!("10092", process(input)?);
 		Ok(())
+	}
+	#[test]
+	fn test_checksum_one() {
+		let input = "#######
+#...O..
+#......
+
+<>";
+		let (mut grid, movements) = parse(input).unwrap();
+		for row in grid.iter_rows() {
+			dbg!(row);
+		}
+		assert_eq!(grid.size(), (grid.rows(), grid.cols()));
+		assert_eq!((grid.rows(), grid.cols()), (3, 7));
+		let (walls, boxes) = (find_items(&grid, WALL), find_items(&grid, BOX));
+		let maze = Warehouse {
+			moves: vec![],
+			robot: Pos(0, 0),
+			boxes,
+			walls,
+			size: grid.size(),
+		};
+		let box_check = maze.checksum();
+		assert_eq!(104, box_check);
+	}
+	#[test]
+	fn test_checksum_two() {
+		let input = "##########
+#.O.O.OOO#
+#........#
+#OO......#
+#OO@.....#
+#O#.....O#
+#O.....OO#
+#O.....OO#
+#OO....OO#
+##########
+
+<>";
+		let (mut grid, _movements) = parse(input).unwrap();
+		for row in grid.iter_rows() {
+			dbg!(row);
+		}
+		// assert_eq!(grid.size(), (grid.rows(), grid.cols()));
+		// assert_eq!((grid.rows(), grid.cols()), (3, 7));
+		let robot_pos = find_robot(&grid);
+		// Pos(3, 5)
+		// assert_eq!(Pos(3, 5), robot_pos);
+		let (walls, boxes) = (find_items(&grid, WALL), find_items(&grid, BOX));
+		let maze = Warehouse {
+			moves: vec![],
+			robot: robot_pos,
+			boxes,
+			walls,
+			size: grid.size(),
+		};
+		let box_check = maze.checksum();
+		assert_eq!(10092, box_check);
 	}
 }
