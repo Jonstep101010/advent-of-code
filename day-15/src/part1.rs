@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use grid::{Grid, grid};
+use grid::{Grid, grid, grid_cm};
 use itertools::Itertools;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -22,14 +22,48 @@ impl Direction {
 	}
 }
 
+///
+/// Example:
+/// ```
+/// use day_15::part1::parse_grid;
+/// let input = "#######
+/// #...O..
+/// #......
+/// ";
+/// let grid = parse_grid(input);
+/// assert_eq!(grid.size(), (7, 3));
+/// assert_eq!(grid[(4, 1)], 'O');
+/// assert_eq!(grid[(3, 1)], '.');
+/// assert_eq!(grid[(5, 1)], '.');
+/// assert_eq!(grid[(4, 2)], '#');
+/// assert_eq!(grid[(0, 1)], '#');
+/// assert_eq!(grid[(6, 0)], '.');
+/// ```
+pub fn parse_grid(input: &str) -> Grid<char> {
+	// for each line we want to have have a shelf
+	// where the later the line, the lower the shelf will be
+	// each line's first character should have an x of 0
+	let mut new = grid![];
+	for (lc, row) in input.lines().rev().enumerate() {
+		let items = row.chars().collect_vec();
+		new.push_row(items);
+		eprintln!("lc: {lc}");
+		for i in 0..row.len() {
+			dbg!(new[(lc, i)]);
+		}
+	}
+	new.transpose();
+	new
+}
+
 fn parse(input: &str) -> miette::Result<(Grid<char>, Vec<Direction>)> {
 	let (g, ins) = input.split_once("\n\n").unwrap();
 	// an x, y grid (row-major)
 	let mut grid = grid![];
 	// @follow-up need to start from end and go back
-	for (lc, row) in g.lines().enumerate() {
+	for (lc, row) in g.lines().rev().enumerate() {
 		let items = row.chars().collect_vec();
-		// dbg!(&items);
+		dbg!(&items);
 		grid.push_row(items);
 		eprintln!("lc: {lc}");
 		for i in 0..row.len() {
@@ -37,10 +71,10 @@ fn parse(input: &str) -> miette::Result<(Grid<char>, Vec<Direction>)> {
 		}
 	}
 	// grid is y top to bottom!
-	grid.flip_rows();
-	// grid.rotate_half();
+	// grid.flip_rows();
+	grid.rotate_half();
 	// now cartesian :)
-	// dbg!(&grid);
+	dbg!(&grid);
 	let instructions = ins
 		.replace('\n', "")
 		.chars()
@@ -85,13 +119,12 @@ impl Warehouse {
 		}
 	}
 	// could return the resulting grid
-	pub fn run(&mut self) {
-
-	}
+	pub fn run(&mut self) {}
 	pub fn checksum(&self) -> u64 {
 		let mut box_result: u64 = 0;
 		dbg!(self.size);
 		let (height, _width) = self.size;
+		// let (_width, height) = self.size;
 		for single_box in &self.boxes {
 			dbg!(single_box.0);
 			box_result += single_box.0 as u64;
@@ -139,10 +172,10 @@ fn find_items(grid: &Grid<char>, item: char) -> HashSet<Pos> {
 // dbg!(&movements[0..9]);
 // assert_eq!(
 // 	&[
-// 		Direction::Left,
-// 		Direction::Down,
-// 		Direction::Down,
-// 		Direction::Right,
+// Direction::Left,
+// Direction::Down,
+// Direction::Down,
+// Direction::Right,
 // 	],
 // 	&movements[0..=3] /* or 0..4 for first four */
 // );
@@ -163,16 +196,70 @@ pub fn process(input: &str) -> miette::Result<String> {
 	assert!(boxes.contains(&Pos(1, 3)));
 	assert!(boxes.contains(&Pos(1, 4)));
 	let mut maze = Warehouse::new(movements, robot_start, boxes, walls, grid.size());
-	maze.run();// we might assign this later
+	maze.run(); // we might assign this later
 	// 100 * distance from top edge + distance from left (x)
 	let box_checksum = maze.checksum();
 	Ok(box_checksum.to_string())
 }
 
+// fn print_xy_increment(grid: &Grid<char>) {
+// 	for
+// }
+// fn print_yx_increment(grid: &Grid<char>) {
+// 	let mut y = 0;
+// 	for _ in grid[(y, x)] {
+// let mut x = 0;
+// for grid[(y, x)] {
+// 	eprint!("{}",grid[(y, x)] );
+// }
+// 	}
+// }
+
 #[cfg(test)]
 mod tests {
+	use std::vec;
+
 	use super::*;
 
+	#[test]
+	fn test_stuff() {}
+	#[test]
+	fn test_g1() {
+		let mut grid = grid![[1, 2, 3]
+[4, 5, 6]
+[7, 8, 9]];
+		grid.flip_cols();
+		assert_eq!(grid[(2, 0)], 9);
+		assert_eq!(grid.size(), (3, 3));
+		eprintln!("default");
+		dbg!(&grid);
+		assert_eq!(6, grid[(1, 2)]);
+		let grid = grid![[1,2,3][4,5,6][7,8,9]];
+		dbg!(&grid);
+		assert_eq!(grid[(1, 0)], 2);
+	}
+	#[test]
+	fn test_g2() {
+		// 777 is y_max / lines first
+		// 444 is in between them
+		// 111 is y_min / lines last
+		// we want to access as first the last lines
+		let mut grid = grid_cm![];
+		grid.insert_col(0, vec![7, 8, 9]);
+		grid.insert_col(0, vec![4, 5, 6]);
+		grid.insert_col(0, vec![1, 2, 3]);
+		// assert_eq!(grid, grid![[7,8,9][4,5,6][1,2,3]]);
+		// assert_eq!();
+		// y, x
+		assert_eq!(grid[(0, 1)], 2);
+		dbg!(&grid);
+		grid.transpose();
+		dbg!(&grid);
+		assert_eq!(grid[(1, 0)], 2);
+		dbg!(&grid);
+		grid.insert_row(3, vec![10]);
+		assert_eq!(grid.size(), (3, 3));
+	}
 	#[test]
 	fn test_contains() {
 		let mut walls = HashSet::new();
@@ -206,6 +293,36 @@ vvv<<^>^v^^><<>>><>^<<><^vv^^<>vvv<>><^^v>^>vv<>v<<<<v<^v>^<^^>>>^<v<v
 v^^>>><<^^<>>^v^<v^vv<>v^<<>^<^v^v><^<<<><<^<v><v<>vv>>v><v^<vv<>v^<<^";
 		assert_eq!("10092", process(input)?);
 		Ok(())
+	}
+	#[test]
+	fn test_grid() {
+		// let input = "#######
+		// #...O..
+		// #......
+
+		// <>";
+		// let (mut grid, _) = parse(input).unwrap();
+		let mut grid_rev_stack = grid_cm![
+			['.', '.', '.', '.', '.', '.', '#']
+			['.', '.', 'O', '.', '.', '.', '#']
+			['#', '#', '#', '#', '#', '#', '#']
+		];
+		// y, x
+		assert_eq!(grid_rev_stack[(1, 2)], 'O');
+		grid_rev_stack.flip_rows();
+		eprintln!("before");
+		dbg!(&grid_rev_stack);
+		grid_rev_stack.rotate_half();
+		dbg!(&grid_rev_stack);
+		let mut grid_two = grid![
+		[ '#', '#', '#', '#', '#', '#', '#']
+		[ '#', '.', '.', '.', 'O', '.', '.']
+		[ '#', '.', '.', '.', '.', '.', '.']
+		];
+		// y, x
+		assert_eq!(grid_two[(1, 4)], 'O');
+		dbg!(&grid_two);
+		// assert_eq!(expected_grid[(2, 1)], grid[(2, 1)]);
 	}
 	#[test]
 	fn test_checksum_one() {
@@ -253,7 +370,7 @@ v^^>>><<^^<>>^v^<v^vv<>v^<<>^<^v^v><^<<<><<^<v><v<>vv>>v><v^<vv<>v^<<^";
 		// assert_eq!((grid.rows(), grid.cols()), (3, 7));
 		let robot_pos = find_robot(&grid);
 		// Pos(3, 5)
-		// assert_eq!(Pos(3, 5), robot_pos);
+		assert_eq!(Pos(3, 5), robot_pos);
 		let (walls, boxes) = (find_items(&grid, WALL), find_items(&grid, BOX));
 		let maze = Warehouse {
 			moves: vec![],
