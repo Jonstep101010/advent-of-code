@@ -12,6 +12,7 @@ use itertools::Itertools;
 fn display_grid(grid: &mut Grid<char>) {
 	// clear screen
 	print!("\x1B[2J\x1B[1;1H");
+	// rotate to get the right orientation for printing
 	grid.rotate_left();
 	for row in grid.iter_rows() {
 		for &c in row {
@@ -20,6 +21,7 @@ fn display_grid(grid: &mut Grid<char>) {
 		println!();
 	}
 	std::io::stdout().flush().unwrap();
+	// reset orientation
 	grid.rotate_right();
 }
 
@@ -42,16 +44,14 @@ fn display_grid(grid: &mut Grid<char>) {
 /// assert_eq!(grid[(4, 2)], '#');
 /// assert_eq!(grid[(0, 1)], '#');
 /// assert_eq!(grid[(6, 0)], '.');
-// /// grid.rotate_left();// can be used for printing
-// /// dbg!(&grid);// prints rotated to the right
-// /// grid.rotate_right();// reset
 /// print_grid(&mut grid);
 /// ```
+///
+/// for each line we want to have have a shelf
+/// where the later the line, the lower the shelf will be
+/// each line's first character should have an x of 0
 #[must_use]
 pub fn parse_grid(input: &str) -> Grid<char> {
-	// for each line we want to have have a shelf
-	// where the later the line, the lower the shelf will be
-	// each line's first character should have an x of 0
 	let mut new = grid![];
 	for row in input.lines().rev() {
 		let items = row.chars().collect_vec();
@@ -148,33 +148,31 @@ impl Warehouse {
 		#[cfg(test)]
 		display_grid(&mut self.grid);
 	}
+	fn move_current_box(&mut self, box_pos: Pos, new_position: Pos) -> Option<Pos> {
+		self.boxes.remove(&box_pos);
+		self.boxes.insert(new_position);
+		self.grid[(new_position.0 as usize, new_position.1 as usize)] = 'O';
+		self.grid[(box_pos.0 as usize, box_pos.1 as usize)] = '.';
+		#[cfg(test)]
+		display_grid(&mut self.grid);
+		Some(new_position)
+	}
 	fn move_box(&mut self, box_pos: Pos) -> Option<Pos> {
 		let new_position = box_pos + self.cur_move;
 		if self.walls.contains(&(box_pos)) {
 			None
 		} else if self.grid[(new_position.0 as usize, new_position.1 as usize)] == '.' {
-			self.boxes.remove(&box_pos);
-			self.boxes.insert(new_position);
-			self.grid[(new_position.0 as usize, new_position.1 as usize)] = 'O';
-			self.grid[(box_pos.0 as usize, box_pos.1 as usize)] = '.';
-			#[cfg(test)]
-			display_grid(&mut self.grid);
-			return Some(new_position);
+			// the box downstream is free
+			return self.move_current_box(box_pos, new_position);
 		} else {
 			let next_box = self.move_box(box_pos + self.cur_move);
-			// try moving the box
+			// try moving the box downstream
 			if next_box.is_some() && next_box.unwrap() == new_position + self.cur_move {
 				// move the box
-				self.boxes.remove(&box_pos);
-				self.boxes.insert(new_position);
-				self.grid[(new_position.0 as usize, new_position.1 as usize)] = 'O';
-				self.grid[(box_pos.0 as usize, box_pos.1 as usize)] = '.';
-				#[cfg(test)]
-				display_grid(&mut self.grid);
-				return Some(new_position);
+				return self.move_current_box(box_pos, new_position);
 			}
 			// cannot move the box
-			return None;
+			None
 		}
 	}
 	///
