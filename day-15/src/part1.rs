@@ -61,34 +61,17 @@ pub fn parse_grid(input: &str) -> Grid<char> {
 	new
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
-enum Direction {
-	Up,
-	Right,
-	Down,
-	Left,
-}
-
-impl Direction {
-	fn to_pos(self) -> Pos {
-		match self {
-			Direction::Up => Pos(0, 1),
-			Direction::Right => Pos(1, 0),
-			Direction::Down => Pos(0, -1),
-			Direction::Left => Pos(-1, 0),
-		}
-	}
-}
+type Direction = Pos;
 
 fn parse_instructions(input: &str) -> Vec<Direction> {
 	input
 		.replace('\n', "")
 		.chars()
 		.map(|c| match c {
-			'^' => Direction::Up,
-			'>' => Direction::Right,
-			'v' => Direction::Down,
-			'<' => Direction::Left,
+			'^' => Pos(0, 1),
+			'>' => Pos(1, 0),
+			'v' => Pos(0, -1),
+			'<' => Pos(-1, 0),
 			_ => panic!("Invalid direction character"),
 		})
 		.collect()
@@ -148,7 +131,7 @@ impl Warehouse {
 		walls: HashSet<Pos>,
 		grid: Grid<char>,
 	) -> Self {
-		let cur_move = moves[0].to_pos();
+		let cur_move = moves[0];
 		Self {
 			moves: moves.into(),
 			robot,
@@ -198,7 +181,7 @@ impl Warehouse {
 	/// walk path of possible `moves`
 	pub fn run(&mut self) {
 		while !self.moves.is_empty() {
-			self.cur_move = self.moves.pop_front().unwrap().to_pos();
+			self.cur_move = self.moves.pop_front().unwrap();
 			let next_pos = self.robot + self.cur_move;
 			#[cfg(test)]
 			display_grid(&mut self.grid);
