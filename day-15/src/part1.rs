@@ -1,3 +1,4 @@
+#![allow(unused_imports)]
 use std::{
 	collections::{HashSet, VecDeque},
 	io::Write,
@@ -7,24 +8,7 @@ use std::{
 use grid::{Grid, grid};
 use itertools::Itertools;
 
-pub fn print_grid(grid: &mut Grid<char>) {
-	grid.rotate_left();
-	println!("grid:");
-	for row in grid.iter_rows() {
-		for &c in row {
-			print!("{c}");
-		}
-		println!();
-	}
-	grid.rotate_right();
-}
-
-pub fn dbg_grid(grid: &mut Grid<char>) {
-	grid.rotate_left();
-	dbg!(&grid);
-	grid.rotate_right();
-}
-
+#[cfg(test)]
 fn display_grid(grid: &mut Grid<char>) {
 	// clear screen
 	print!("\x1B[2J\x1B[1;1H");
@@ -42,9 +26,7 @@ fn display_grid(grid: &mut Grid<char>) {
 ///
 /// Example:
 /// ```
-/// use day_15::part1::parse_grid;
 /// use day_15::part1::print_grid;
-/// use day_15::part1::dbg_grid;
 /// let input = "#######
 /// #...O..
 /// #......
@@ -64,7 +46,6 @@ fn display_grid(grid: &mut Grid<char>) {
 // /// dbg!(&grid);// prints rotated to the right
 // /// grid.rotate_right();// reset
 /// print_grid(&mut grid);
-/// dbg_grid(&mut grid);
 /// ```
 #[must_use]
 pub fn parse_grid(input: &str) -> Grid<char> {
@@ -155,7 +136,6 @@ struct Warehouse {
 	robot: Pos,
 	boxes: HashSet<Pos>,
 	walls: HashSet<Pos>,
-	size: (usize, usize),
 	grid: Grid<char>,
 	cur_move: Pos,
 }
@@ -166,7 +146,6 @@ impl Warehouse {
 		robot: Pos,
 		boxes: HashSet<Pos>,
 		walls: HashSet<Pos>,
-		size: (usize, usize),
 		grid: Grid<char>,
 	) -> Self {
 		let cur_move = moves[0].to_pos();
@@ -175,7 +154,6 @@ impl Warehouse {
 			robot,
 			boxes,
 			walls,
-			size,
 			grid,
 			cur_move,
 		}
@@ -184,6 +162,7 @@ impl Warehouse {
 		self.grid[(self.robot.0 as usize, self.robot.1 as usize)] = '.';
 		self.robot += self.cur_move;
 		self.grid[(self.robot.0 as usize, self.robot.1 as usize)] = '@';
+		#[cfg(test)]
 		display_grid(&mut self.grid);
 	}
 	fn move_box(&mut self, box_pos: Pos) -> Option<Pos> {
@@ -195,6 +174,7 @@ impl Warehouse {
 			self.boxes.insert(new_position);
 			self.grid[(new_position.0 as usize, new_position.1 as usize)] = 'O';
 			self.grid[(box_pos.0 as usize, box_pos.1 as usize)] = '.';
+			#[cfg(test)]
 			display_grid(&mut self.grid);
 			return Some(new_position);
 		} else {
@@ -206,6 +186,7 @@ impl Warehouse {
 				self.boxes.insert(new_position);
 				self.grid[(new_position.0 as usize, new_position.1 as usize)] = 'O';
 				self.grid[(box_pos.0 as usize, box_pos.1 as usize)] = '.';
+				#[cfg(test)]
 				display_grid(&mut self.grid);
 				return Some(new_position);
 			}
@@ -213,50 +194,37 @@ impl Warehouse {
 			return None;
 		}
 	}
-	// could return the resulting grid
+	///
+	/// walk path of possible `moves`
 	pub fn run(&mut self) {
-		// check while iterating over movements if a move is possible
 		while !self.moves.is_empty() {
 			self.cur_move = self.moves.pop_front().unwrap().to_pos();
 			let next_pos = self.robot + self.cur_move;
-			// dbg!(next_pos);
+			#[cfg(test)]
 			display_grid(&mut self.grid);
 			if self.walls.contains(&next_pos) {
-				// do not move
-				// skip moves
-				// display_grid(&mut self.grid);
+				// skip moves in front of walls
 			} else if !self.boxes.contains(&next_pos) {
-				// we can definitely move
+				// we can definitely move: there are no obstacles
 				self.move_robot();
-			} else {
+			} else if self.boxes.contains(&next_pos)
+				&& !self.walls.contains(&(next_pos + self.cur_move))
+				&& !self.boxes.contains(&(next_pos + self.cur_move))
+			{
 				// we can move one if a box can move
-				if self.boxes.contains(&next_pos)
-					&& !self.walls.contains(&(next_pos + self.cur_move))
-					&& !self.boxes.contains(&(next_pos + self.cur_move))
-				{
-					self.move_box(next_pos);
-					self.move_robot();
-				} else if self.boxes.contains(&(next_pos + self.cur_move))
-					&& self.move_box(next_pos).is_some()
-				{
-					// walk path
-					self.move_robot();
-					// @todo move boxes there previously
-					// shift_boxes_in_front if no wall (empty space found)
-					// there is no wall where the box will have to move
-					// display_grid(&mut self.grid);
-				} else {
-					// we cannot move because the box cannot move
-				}
-			}
-			if self.moves.is_empty() {
-				break;
+				self.move_box(next_pos);
+				self.move_robot();
+			} else if self.boxes.contains(&(next_pos + self.cur_move))
+				&& self.move_box(next_pos).is_some()
+			{
+				// we can move if we can shift the boxes into free space
+				self.move_robot();
 			}
 		}
 	}
 	pub fn checksum(&self) -> u64 {
 		let mut box_result: u64 = 0;
-		let (_, height) = self.size;
+		let (_, height) = self.grid.size();
 		for single_box in &self.boxes {
 			box_result += single_box.0 as u64;
 			box_result += (height - (single_box.1 + 1) as usize) as u64 * 100;
@@ -295,19 +263,11 @@ const BOX: char = 'O';
 #[tracing::instrument]
 pub fn process(input: &str) -> miette::Result<String> {
 	let (grid, movements) = parse(input)?;
-	// println!("{:?}", grid);
 	let robot_start = find_robot(&grid);
 	let walls = find_items(&grid, WALL);
-	// eprintln!("{:?}", walls);
 	let boxes = find_items(&grid, BOX);
-	// assert_eq!(37, walls.len());
-	// assert_eq!(21, boxes.len());
-	// assert!(walls.contains(&Pos(2, 4)));
-	// assert!(boxes.contains(&Pos(1, 3)));
-	// assert!(boxes.contains(&Pos(1, 4)));
-	let mut maze = Warehouse::new(movements, robot_start, boxes, walls, grid.size(), grid);
-	maze.run(); // we might assign this later
-	// 100 * distance from top edge + distance from left (x)
+	let mut maze = Warehouse::new(movements, robot_start, boxes, walls, grid);
+	maze.run();
 	let box_checksum = maze.checksum();
 	Ok(box_checksum.to_string())
 }
@@ -316,8 +276,6 @@ pub fn process(input: &str) -> miette::Result<String> {
 mod tests {
 	use super::*;
 
-	#[test]
-	fn test_stuff() {}
 	#[test]
 	fn test_smaller() -> miette::Result<()> {
 		let input = "########
@@ -361,37 +319,6 @@ v^^>>><<^^<>>^v^<v^vv<>v^<<>^<^v^v><^<<<><<^<v><v<>vv>>v><v^<vv<>v^<<^";
 		assert_eq!("10092", process(input)?);
 		Ok(())
 	}
-	// 	#[test]
-	// 	fn test_checksum_one() {
-	// 		let input = "##########
-	// #.O.O.OOO#
-	// #........#
-	// #OO......#
-	// #OO@.....#
-	// #O#.....O#
-	// #O.....OO#
-	// #O.....OO#
-	// #OO....OO#
-	// ##########
-
-	// <>";
-	// 		let (grid, _) = parse(input).unwrap();
-
-	// 		// assert_eq!(grid.size(), (grid.rows(), grid.cols()));
-	// 		// assert_eq!((grid.rows(), grid.cols()), (7, 3));
-	// 		let (walls, boxes) = (find_items(&grid, WALL), find_items(&grid, BOX));
-	// 		let maze = Warehouse {
-	// 			moves: VecDeque::new(),
-	// 			robot: Pos(0, 0),
-	// 			boxes,
-	// 			walls,
-	// 			size: grid.size(),
-	// 			grid,
-	// 			cur_move: Pos(0, 0),
-	// 		};
-	// 		let box_check = maze.checksum();
-	// 		assert_eq!(104, box_check);
-	// 	}
 	#[test]
 	fn test_checksum_two() {
 		let input = "##########
@@ -415,7 +342,6 @@ v^^>>><<^^<>>^v^<v^vv<>v^<<>^<^v^v><^<<<><<^<v><v<>vv>>v><v^<vv<>v^<<^";
 			robot: robot_pos,
 			boxes,
 			walls,
-			size: grid.size(),
 			grid,
 			cur_move: Pos(0, 0),
 		};
