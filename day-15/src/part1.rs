@@ -12,7 +12,7 @@ pub fn print_grid(grid: &mut Grid<char>) {
 	println!("grid:");
 	for row in grid.iter_rows() {
 		for &c in row {
-			print!("{}", c);
+			print!("{c}");
 		}
 		println!();
 	}
@@ -31,7 +31,7 @@ fn display_grid(grid: &mut Grid<char>) {
 	grid.rotate_left();
 	for row in grid.iter_rows() {
 		for &c in row {
-			print!("{}", c);
+			print!("{c}");
 		}
 		println!();
 	}
@@ -66,6 +66,7 @@ fn display_grid(grid: &mut Grid<char>) {
 /// print_grid(&mut grid);
 /// dbg_grid(&mut grid);
 /// ```
+#[must_use]
 pub fn parse_grid(input: &str) -> Grid<char> {
 	// for each line we want to have have a shelf
 	// where the later the line, the lower the shelf will be
@@ -75,16 +76,7 @@ pub fn parse_grid(input: &str) -> Grid<char> {
 		let items = row.chars().collect_vec();
 		new.push_row(items);
 	}
-	// for debugging
-	// for (lc, row) in input.lines().rev().enumerate() {
-	// 	let items = row.chars().collect_vec();
-	// 	new.push_row(items);
-	// 	for i in 0..row.len() {
-	// 		dbg!(new[(lc, i)]);
-	// 	}
-	// }
 	new.transpose();
-	// print_grid(&mut new);
 	new
 }
 
@@ -122,7 +114,11 @@ fn parse_instructions(input: &str) -> Vec<Direction> {
 }
 
 fn parse(input: &str) -> miette::Result<(Grid<char>, Vec<Direction>)> {
-	let (g, ins) = input.split_once("\n\n").unwrap();
+	let opt_grid_instructions = input.split_once("\n\n");
+	if opt_grid_instructions.is_none() {
+		return Err(miette::miette!("No instructions/grid found"));
+	}
+	let (g, ins) = opt_grid_instructions.unwrap();
 	let grid = parse_grid(g);
 	let instructions = parse_instructions(ins);
 	Ok((grid, instructions))
@@ -131,8 +127,6 @@ fn parse(input: &str) -> miette::Result<(Grid<char>, Vec<Direction>)> {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 struct Pos(i32, i32);
 use std::ops::Add;
-
-type Move = Pos;
 
 impl Add for Pos {
 	type Output = Self;
@@ -149,9 +143,9 @@ impl AddAssign for Pos {
 	}
 }
 
-impl Into<(i32, i32)> for Pos {
-	fn into(self) -> (i32, i32) {
-		(self.0, self.1)
+impl From<Pos> for (i32, i32) {
+	fn from(val: Pos) -> Self {
+		(val.0, val.1)
 	}
 }
 
@@ -175,7 +169,7 @@ impl Warehouse {
 		size: (usize, usize),
 		grid: Grid<char>,
 	) -> Self {
-		let cur_move = moves[0].clone().to_pos();
+		let cur_move = moves[0].to_pos();
 		Self {
 			moves: moves.into(),
 			robot,
@@ -193,22 +187,16 @@ impl Warehouse {
 		display_grid(&mut self.grid);
 	}
 	fn move_box(&mut self, box_pos: Pos) -> Option<Pos> {
-		// update pos using AddAssign of cur_move
-		// dbg!(box_pos);
 		let new_position = box_pos + self.cur_move;
 		if self.walls.contains(&(box_pos)) {
-			return None;
+			None
 		} else if self.grid[(new_position.0 as usize, new_position.1 as usize)] == '.' {
-			// we can move the box
-			// dbg!(new_position);
 			self.boxes.remove(&box_pos);
 			self.boxes.insert(new_position);
 			self.grid[(new_position.0 as usize, new_position.1 as usize)] = 'O';
 			self.grid[(box_pos.0 as usize, box_pos.1 as usize)] = '.';
 			display_grid(&mut self.grid);
 			return Some(new_position);
-		} else if !self.boxes.contains(&box_pos) {
-			panic!("Box is not in the right position");
 		} else {
 			let next_box = self.move_box(box_pos + self.cur_move);
 			// try moving the box
@@ -218,12 +206,11 @@ impl Warehouse {
 				self.boxes.insert(new_position);
 				self.grid[(new_position.0 as usize, new_position.1 as usize)] = 'O';
 				self.grid[(box_pos.0 as usize, box_pos.1 as usize)] = '.';
-				display_grid(&mut self.grid);;
+				display_grid(&mut self.grid);
 				return Some(new_position);
-			} else {
-				// cannot move the box
-				return None;
 			}
+			// cannot move the box
+			return None;
 		}
 	}
 	// could return the resulting grid
@@ -327,8 +314,6 @@ pub fn process(input: &str) -> miette::Result<String> {
 
 #[cfg(test)]
 mod tests {
-	use std::{collections::vec_deque, vec};
-
 	use super::*;
 
 	#[test]
@@ -421,10 +406,8 @@ v^^>>><<^^<>>^v^<v^vv<>v^<<>^<^v^v><^<<<><<^<v><v<>vv>>v><v^<vv<>v^<<^";
 ##########
 
 <>";
-		let (mut grid, _movements) = parse(input).unwrap();
-		// dbg_grid(&mut grid);
+		let (grid, _movements) = parse(input).unwrap();
 		let robot_pos = find_robot(&grid);
-		// Pos(3, 5)
 		assert_eq!(Pos(3, 5), robot_pos);
 		let (walls, boxes) = (find_items(&grid, WALL), find_items(&grid, BOX));
 		let _maze = Warehouse {
