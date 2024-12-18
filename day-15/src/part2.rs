@@ -78,6 +78,17 @@ fn parse_instructions(input: &str) -> Vec<Direction> {
 }
 
 fn parse(input: &str) -> miette::Result<(Grid<char>, Vec<Direction>)> {
+	// preprocess input
+	let input = input
+		.chars()
+		.map(|c| match c {
+			'#' => "##".to_string(),
+			'O' => "[]".to_string(),
+			'.' => "..".to_string(),
+			'@' => "@.".to_string(),
+			other => other.to_string(),
+		})
+		.collect::<String>();
 	let opt_grid_instructions = input.split_once("\n\n");
 	if opt_grid_instructions.is_none() {
 		return Err(miette::miette!("No instructions/grid found"));
@@ -177,6 +188,8 @@ impl Warehouse {
 	}
 	///
 	/// walk path of possible `moves`
+	/// 
+	/// @todo add both horizontal and vertical checks, boxes can only move in specific directions
 	pub fn run(&mut self) {
 		while !self.moves.is_empty() {
 			self.cur_move = self.moves.pop_front().unwrap();
@@ -240,12 +253,12 @@ fn find_items(grid: &Grid<char>, item: char) -> HashSet<Pos> {
 }
 
 const WALL: char = '#';
-const BOX: char = 'O';
+const BOX: char = 'O';// @todo make this two different items
 #[tracing::instrument]
 pub fn process(input: &str) -> miette::Result<String> {
 	let (grid, movements) = parse(input)?;
 	let robot_start = find_robot(&grid);
-	let walls = find_items(&grid, WALL);
+	let walls = find_items(&grid, WALL);// create wallsleft and wallsright @follow-up
 	let boxes = find_items(&grid, BOX);
 	let mut maze = Warehouse::new(movements, robot_start, boxes, walls, grid);
 	maze.run();
