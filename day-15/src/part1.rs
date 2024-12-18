@@ -257,9 +257,11 @@ pub fn process(input: &str) -> miette::Result<String> {
 mod tests {
 	use super::*;
 
-	#[test]
-	fn test_smaller() -> miette::Result<()> {
-		let input = "########
+	use rstest::rstest;
+
+	#[rstest]
+	#[case(
+		"########
 #..O.O.#
 ##@.O..#
 #...O..#
@@ -268,14 +270,12 @@ mod tests {
 #......#
 ########
 
-<^^>>>vv<v>>v<<";
-		// 30 walls, 6 boxes
-		assert_eq!("2028", process(input)?);
-		Ok(())
-	}
-	#[test]
-	fn test_process() -> miette::Result<()> {
-		let input = "##########
+<^^>>>vv<v>>v<<",
+		"2028"
+	)]
+	// walls: 37, boxes 21
+	#[case(
+		"##########
 #..O..O.O#
 #......O.#
 #.OO..O.O#
@@ -295,9 +295,12 @@ vvv<<^>^v^^><<>>><>^<<><^vv^^<>vvv<>><^^v>^>vv<>v<<<<v<^v>^<^^>>>^<v<v
 >^>>^v>vv>^<<^v<>><<><<v<<v><>v<^vv<<<>^^v^>^^>>><<^v>>v^v><^^>>^<>vv^
 <><^^>^^^<><vvvvv^v<v<<>^v<v>v<<^><<><<><<<^^<<<^<<>><<><^^^>^^<>^>v<>
 ^^>vv<^v^v<vv>^<><v<^v>^^^>>>^^vvv^>vvv<>>>^<^>>>>>^<<^v>^vvv<>^<><<v>
-v^^>>><<^^<>>^v^<v^vv<>v^<<>^<^v^v><^<<<><<^<v><v<>vv>>v><v^<vv<>v^<<^";
-		// walls: 37, boxes 21
-		assert_eq!("10092", process(input)?);
+v^^>>><<^^<>>^v^<v^vv<>v^<<>^<^v^v><^<<<><<^<v><v<>vv>>v><v^<vv<>v^<<^",
+		"10092"
+	)]
+	fn test_process(#[case] input: &str, #[case] result: &str) -> miette::Result<()> {
+		let output = process(input)?;
+		assert_eq!(output, result);
 		Ok(())
 	}
 	#[test]

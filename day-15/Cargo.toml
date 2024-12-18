@@ -12,6 +12,7 @@ tracing.workspace = true
 tracing-subscriber.workspace = true
 miette.workspace = true
 grid = "0.15.0"
+rstest.workspace = true
 
 [dev-dependencies]
 divan.workspace = true
