@@ -229,17 +229,20 @@ impl Warehouse {
 			}
 		}
 	}
-	pub fn checksum(&self) -> u64 {
-		let mut box_result: u64 = 0;
-		let (_, height) = self.grid.size();
-		for single_box in &self.box_left {
-			box_result += single_box.0 as u64;
-			box_result += (height - (single_box.1 + 1) as usize) as u64 * 100;
-		}
-		box_result
-	}
 }
 
+fn checksum_grid(grid: &Grid<char>) -> u64 {
+	let mut box_result: u64 = 0;
+	for (x, row) in grid.iter_rows().enumerate() {
+		for (y, &c) in row.enumerate() {
+			// left is always the closest
+			if c == '[' {
+				box_result += y as u64 * 100 + x as u64;
+			}
+		}
+	}
+	box_result
+}
 fn find_robot(grid: &Grid<char>) -> Pos {
 	for (x, mut row) in grid.iter_rows().enumerate() {
 		let rowsearch = row.find_position(|&&c| c == '@');
@@ -277,7 +280,7 @@ pub fn process(input: &str) -> miette::Result<String> {
 	let boxes_right = find_items(&grid, BOX_RIGHT);
 	let mut maze = Warehouse::new(movements, robot_start, boxes_left, boxes_right, walls, grid);
 	maze.run();
-	let box_checksum = maze.checksum();
+	let box_checksum = checksum_grid(&maze.grid);
 	Ok(box_checksum.to_string())
 }
 
@@ -289,9 +292,9 @@ mod tests {
 
 	use rstest::rstest;
 
-	// 	#[rstest]
-	// 	#[case(
-	// 		"########
+	#[rstest]
+	// #[case(
+	// 	"########
 	// #..O.O.#
 	// ##@.O..#
 	// #...O..#
@@ -301,38 +304,38 @@ mod tests {
 	// ########
 
 	// <^^>>>vv<v>>v<<",
-	// 		"2028"
-	// 	)]
-	// 	// walls: 37, boxes 21
-	// 	#[case(
-	// 		"##########
-	// #..O..O.O#
-	// #......O.#
-	// #.OO..O.O#
-	// #..O@..O.#
-	// #O#..O...#
-	// #O..O..O.#
-	// #.OO.O.OO#
-	// #....O...#
-	// ##########
+	// 	"2028"
+	// )]
+	// walls: 37, boxes 21
+	#[case(
+		"##########
+#..O..O.O#
+#......O.#
+#.OO..O.O#
+#..O@..O.#
+#O#..O...#
+#O..O..O.#
+#.OO.O.OO#
+#....O...#
+##########
 
-	// <vv>^<v^>v>^vv^v>v<>v^v<v<^vv<<<^><<><>>v<vvv<>^v^>^<<<><<v<<<v^vv^v>^
-	// vvv<<^>^v^^><<>>><>^<<><^vv^^<>vvv<>><^^v>^>vv<>v<<<<v<^v>^<^^>>>^<v<v
-	// ><>vv>v^v^<>><>>>><^^>vv>v<^^^>>v^v^<^^>v^^>v^<^v>v<>>v^v^<v>v^^<^^vv<
-	// <<v<^>>^^^^>>>v^<>vvv^><v<<<>^^^vv^<vvv>^>v<^^^^v<>^>vvvv><>>v^<<^^^^^
-	// ^><^><>>><>^^<<^^v>>><^<v>^<vv>>v>>>^v><>^v><<<<v>>v<v<v>vvv>^<><<>^><
-	// ^>><>^v<><^vvv<^^<><v<<<<<><^v<<<><<<^^<v<^^^><^>>^<v^><<<^>>^v<v^v<v^
-	// >^>>^v>vv>^<<^v<>><<><<v<<v><>v<^vv<<<>^^v^>^^>>><<^v>>v^v><^^>>^<>vv^
-	// <><^^>^^^<><vvvvv^v<v<<>^v<v>v<<^><<><<><<<^^<<<^<<>><<><^^^>^^<>^>v<>
-	// ^^>vv<^v^v<vv>^<><v<^v>^^^>>>^^vvv^>vvv<>>>^<^>>>>>^<<^v>^vvv<>^<><<v>
-	// v^^>>><<^^<>>^v^<v^vv<>v^<<>^<^v^v><^<<<><<^<v><v<>vv>>v><v^<vv<>v^<<^",
-	// 		"10092"
-	// 	)]
-	// 	fn test_process(#[case] input: &str, #[case] result: &str) -> miette::Result<()> {
-	// 		let output = process(input)?;
-	// 		assert_eq!(output, result);
-	// 		Ok(())
-	// 	}
+<vv>^<v^>v>^vv^v>v<>v^v<v<^vv<<<^><<><>>v<vvv<>^v^>^<<<><<v<<<v^vv^v>^
+vvv<<^>^v^^><<>>><>^<<><^vv^^<>vvv<>><^^v>^>vv<>v<<<<v<^v>^<^^>>>^<v<v
+><>vv>v^v^<>><>>>><^^>vv>v<^^^>>v^v^<^^>v^^>v^<^v>v<>>v^v^<v>v^^<^^vv<
+<<v<^>>^^^^>>>v^<>vvv^><v<<<>^^^vv^<vvv>^>v<^^^^v<>^>vvvv><>>v^<<^^^^^
+^><^><>>><>^^<<^^v>>><^<v>^<vv>>v>>>^v><>^v><<<<v>>v<v<v>vvv>^<><<>^><
+^>><>^v<><^vvv<^^<><v<<<<<><^v<<<><<<^^<v<^^^><^>>^<v^><<<^>>^v<v^v<v^
+>^>>^v>vv>^<<^v<>><<><<v<<v><>v<^vv<<<>^^v^>^^>>><<^v>>v^v><^^>>^<>vv^
+<><^^>^^^<><vvvvv^v<v<<>^v<v>v<<^><<><<><<<^^<<<^<<>><<><^^^>^^<>^>v<>
+^^>vv<^v^v<vv>^<><v<^v>^^^>>>^^vvv^>vvv<>>>^<^>>>>>^<<^v>^vvv<>^<><<v>
+v^^>>><<^^<>>^v^<v^vv<>v^<<>^<^v^v><^<<<><<^<v><v<>vv>>v><v^<vv<>v^<<^",
+		"9021"
+	)]
+	fn test_process(#[case] input: &str, #[case] result: &str) -> miette::Result<()> {
+		let output = process(input)?;
+		assert_eq!(output, result);
+		Ok(())
+	}
 	#[test]
 	fn test_parse_wide_grid() {
 		let input = "##########
@@ -365,61 +368,50 @@ mod tests {
 			'.', '#', '#',
 		];
 		assert_eq!(grid.clone().remove_col(5).unwrap(), expected_player_row);
-		assert_eq!(grid.size(), expected.size());// (20, 10)
+		assert_eq!(grid.size(), expected.size()); // (20, 10)
 		assert_eq!(
 			grid.clone().remove_col(5).unwrap(),
 			expected.remove_col(4).unwrap()
 		);
 	}
 	#[test]
+	fn test_checksum_one() {
+		let mut expected_moves_done: Grid<char> = grid![];
+		expected_moves_done.push_col("##########".chars().collect_vec());
+		expected_moves_done.push_col("##...[]...".chars().collect_vec());
+		expected_moves_done.push_col("##........".chars().collect_vec());
+		let box_check = checksum_grid(&expected_moves_done);
+		assert_eq!(105, box_check);
+	}
+	#[test]
 	fn test_checksum_two() {
-		let input = "##########
-#.O.O.OOO#
-#........#
-#OO......#
-#OO@.....#
-#O#.....O#
-#O.....OO#
-#O.....OO#
-#OO....OO#
-##########
-
-<>";
-		let (grid, _movements) = parse(input).unwrap();
-		let robot_pos = find_robot(&grid);
-		assert_eq!(Pos(3, 5), robot_pos);
-		let (walls, box_left, box_right) = (
-			find_items(&grid, WALL),
-			find_items(&grid, BOX_LEFT),
-			find_items(&grid, BOX_LEFT),
-		);
-		let _maze = Warehouse {
-			moves: VecDeque::new(),
-			robot: robot_pos,
-			box_left,
-			box_right,
-			walls,
-			grid,
-			cur_move: Pos(0, 0),
-		};
-		let box_check = _maze.checksum();
-		assert_eq!(10092, box_check);
+		let mut expected_moves_done: Grid<char> = grid![];
+		expected_moves_done.push_col("####################".chars().collect_vec());
+		expected_moves_done.push_col("##[].......[].[][]##".chars().collect_vec());
+		expected_moves_done.push_col("##[]...........[].##".chars().collect_vec());
+		expected_moves_done.push_col("##[]........[][][]##".chars().collect_vec());
+		expected_moves_done.push_col("##[]......[]....[]##".chars().collect_vec());
+		expected_moves_done.push_col("##..##......[]....##".chars().collect_vec());
+		expected_moves_done.push_col("##..[]............##".chars().collect_vec());
+		expected_moves_done.push_col("##..@......[].[][]##".chars().collect_vec());
+		expected_moves_done.push_col("##......[][]..[]..##".chars().collect_vec());
+		expected_moves_done.push_col("####################".chars().collect_vec());
+		let box_check = checksum_grid(&expected_moves_done);
+		assert_eq!(9021, box_check);
 	}
 	#[test]
 	fn test_find_robot() {
-		let input = "####################
-##[].......[].[][]##
-##[]...........[].##
-##[]........[][][]##
-##[]......[]....[]##
-##..##......[]....##
-##..[]............##
-##..@......[].[][]##
-##......[][]..[]..##
-####################
+		let input = "########
+#..O.O.#
+##@.O..#
+#...O..#
+#.#.O..#
+#...O..#
+#......#
+########
 ";
 		let grid = parse_grid(input);
 		let robot_pos = find_robot(&grid);
-		assert_eq!(Pos(4, 2), robot_pos);
+		assert_eq!(Pos(4, 5), robot_pos);
 	}
 }
