@@ -169,33 +169,29 @@ impl Warehouse {
 		#[cfg(test)]
 		display_grid(&mut self.grid);
 	}
-	fn move_current_box(&mut self, box_pos: Pos, new_position: Pos) -> Option<Pos> {
-		todo!("move boxes");
-		// self.boxes.remove(&box_pos);
-		// self.boxes.insert(new_position);
-		// self.grid[(new_position.0 as usize, new_position.1 as usize)] = 'O';
-		// self.grid[(box_pos.0 as usize, box_pos.1 as usize)] = '.';
-		// #[cfg(test)]
-		// display_grid(&mut self.grid);
-		// Some(new_position)
-	}
+	// fn move_current_box(&mut self, box_pos: Pos, new_position: Pos) -> Option<Pos> {
+	// 	// self.boxes.remove(&box_pos);
+	// 	// self.boxes.insert(new_position);
+	// 	// self.grid[(new_position.0 as usize, new_position.1 as usize)] = 'O';
+	// 	// self.grid[(box_pos.0 as usize, box_pos.1 as usize)] = '.';
+	// 	// #[cfg(test)]
+	// 	// display_grid(&mut self.grid);
+	// 	// Some(new_position)
+	// 	todo!("move boxes");
+	// }
 	fn move_box(&mut self, box_pos: Pos) -> Option<Pos> {
-		// let new_position = box_pos + self.cur_move;
-		// if self.walls.contains(&(box_pos)) {
-		// 	None
-		// } else if self.grid[(new_position.0 as usize, new_position.1 as usize)] == '.' {
-		// 	// the box downstream is free
-		// 	return self.move_current_box(box_pos, new_position);
-		// } else {
-		// 	let next_box = self.move_box(box_pos + self.cur_move);
-		// 	// try moving the box downstream
-		// 	if next_box.is_some() && next_box.unwrap() == new_position + self.cur_move {
-		// 		// move the box
-		// 		return self.move_current_box(box_pos, new_position);
-		// 	}
-		// 	// cannot move the box
-		// 	None
-		// }
+		// check if movement is horizontal or vertical
+		if self.cur_move.0 == 0 {
+			// vertical: it matters which side the box is on
+			let box_side = if self.box_left.contains(&box_pos) {
+				&mut self.box_left
+			} else {
+				&mut self.box_right
+			};
+			let new_position = box_pos + self.cur_move;
+		} else {
+			// horizontal: move if there is space
+		}
 		todo!("move a box");
 	}
 	///
