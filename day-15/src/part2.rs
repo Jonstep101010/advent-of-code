@@ -283,6 +283,8 @@ pub fn process(input: &str) -> miette::Result<String> {
 
 #[cfg(test)]
 mod tests {
+	use std::vec;
+
 	use super::*;
 
 	use rstest::rstest;
@@ -346,23 +348,28 @@ mod tests {
 ";
 		let grid = parse_grid(input);
 		display_grid(&mut grid.clone());
-		assert_eq!(grid.size(), (20, 10));
-		let expected = "####################
-##....[]....[]..[]##
-##............[]..##
-##..[][]....[]..[]##
-##....[]@.....[]..##
-##[]##....[]......##
-##[]....[]....[]..##
-##..[][]..[]..[][]##
-##........[]......##
-####################
-";
+		// grows down
+		let mut expected: Grid<char> = grid![];
+		expected.push_col("####################".chars().collect_vec());
+		expected.push_col("##....[]....[]..[]##".chars().collect_vec());
+		expected.push_col("##............[]..##".chars().collect_vec());
+		expected.push_col("##..[][]....[]..[]##".chars().collect_vec());
+		expected.push_col("##....[]@.....[]..##".chars().collect_vec());
+		expected.push_col("##[]##....[]......##".chars().collect_vec());
+		expected.push_col("##[]....[]....[]..##".chars().collect_vec());
+		expected.push_col("##..[][]..[]..[][]##".chars().collect_vec());
+		expected.push_col("##........[]......##".chars().collect_vec());
+		expected.push_col("####################".chars().collect_vec());
 		let expected_player_row = vec![
 			'#', '#', '.', '.', '.', '.', '[', ']', '@', '.', '.', '.', '.', '.', '[', ']', '.',
 			'.', '#', '#',
 		];
 		assert_eq!(grid.clone().remove_col(5).unwrap(), expected_player_row);
+		assert_eq!(grid.size(), expected.size());// (20, 10)
+		assert_eq!(
+			grid.clone().remove_col(5).unwrap(),
+			expected.remove_col(4).unwrap()
+		);
 	}
 	#[test]
 	fn test_checksum_two() {
