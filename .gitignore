@@ -1,6 +1,6 @@
 scripts/
 daily-template/
-**/target/
+target/
 .env
 **/task.md
 **/docs/*
