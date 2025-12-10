@@ -12,19 +12,12 @@ dial_position = 50
 
 with open(INPUT) as input:
 	output = open(INPUT.replace("input", "output"), "w")
-	for action in input.readlines():
-		if action.startswith("R"):
-			action = int(action[1:])
-			full, partial = divmod(abs(action), 100)
-			new = dial_position + partial
-		elif action.startswith("L"):
-			action = -int(action[1:])
-			full, partial = divmod(abs(action), 100)
-			new = dial_position - partial
-		passed = int(dial_position != 0 and not (0 < new < 100))
+	for line in input.readlines():
+		full, partial = divmod(int(line[1:]), 100)
+		new = dial_position + partial if line[0] == "R" else dial_position - partial
+		password += full + int(dial_position != 0 and not (0 < new < 100))
 		dial_position = new % 100
-		password += full + passed
-		output.write(str(dial_position) + "\n")
+		# output.write(str(dial_position) + "\n")
 
-output.close()
+# output.close()
 print(password)
