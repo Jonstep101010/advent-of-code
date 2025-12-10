@@ -1,0 +1,10 @@
+[tool.ruff.format]
+indent-style = "tab"
+docstring-code-line-length = 79
+quote-style = "double"
+docstring-code-format = true
+[project]
+name = "2025"
+version = "0.1.0"
+requires-python = ">=3.14"
+dependencies = []

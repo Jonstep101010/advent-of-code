@@ -9,7 +9,9 @@ for i, char in enumerate(open('input1.txt').read()):
 		disk += [-1] * x
 blanks = [i for i, x in enumerate(disk) if x == -1]
 for i in blanks:
-	while disk[-1] == -1: disk.pop()
-	if len(disk) <= i: break
+	while disk[-1] == -1:
+		disk.pop()
+	if len(disk) <= i:
+		break
 	disk[i] = disk.pop()
-print (sum(i * x for i, x in enumerate(disk)))
+print(sum(i * x for i, x in enumerate(disk)))

@@ -8,12 +8,12 @@
 from copy import deepcopy
 
 grid = []
-# peaks = {}
+peaks = {}
 trailheads = {}
 input = open('input1.txt').read()
-print (input)
+print(input)
 # parse grid
-for line in (input.splitlines()):
+for line in input.splitlines():
 	row = [int(char) for char in line]
 	grid.append(row)
 
@@ -26,8 +26,10 @@ for i in range(0, len(grid)):
 		if x == 0:
 			trailheads[(i, j)] = []
 
-print("trailheads")
+print('trailheads')
 print(trailheads)
+
+
 # print("peaks")
 # print(peaks)
 # find paths for each trailhead
@@ -47,9 +49,10 @@ def find_path_rec(grid, position, altitude):
 	peak_count += find_path_rec(grid, (position[0], position[1] - 1), altitude + 1)
 	return peak_count
 
+
 unique_paths = 0
 for trailhead in trailheads:
-	print("trailhead:", trailhead)
+	print('trailhead:', trailhead)
 	# print(grid[trailhead[0]][trailhead[1]])
 	unique_paths += find_path_rec(deepcopy(grid), deepcopy(trailhead), 0)
 print(unique_paths)

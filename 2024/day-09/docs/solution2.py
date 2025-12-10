@@ -17,9 +17,11 @@ for i, char in enumerate(open('input1.txt').read().strip()):
 while file_id > 0:
 	file_id -= 1
 	(pos, size) = files[file_id]
-	for i, (fpos, fsize) in enumerate(free_spaces):# basically enumerate pairs of free spaces
-		if fpos >=pos:
-			free_spaces = free_spaces[:i]# get rid of the extra free spaces
+	for i, (fpos, fsize) in enumerate(
+		free_spaces
+	):  # basically enumerate pairs of free spaces
+		if fpos >= pos:
+			free_spaces = free_spaces[:i]  # get rid of the extra free spaces
 			break
 		if size <= fsize:
 			files[file_id] = (fpos, size)
