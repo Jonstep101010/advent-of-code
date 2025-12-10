@@ -4,11 +4,12 @@ pub fn process(_input: &str) -> miette::Result<String> {
 	let mut dial_pos = 50;
 	let mut password = 0;
 	for line in _input.lines() {
-		let action: i32 = if let Some(line) = line.strip_prefix("R") {
+		#[allow(clippy::manual_strip)]
+		let action: i32 = if line.starts_with("R") {
 			line[1..]
 				.parse::<i32>()
 				.map_err(|e| Error::msg(e.to_string()))?
-		} else if let Some(line) = line.strip_prefix("L") {
+		} else if line.starts_with("L") {
 			-line[1..]
 				.parse::<i32>()
 				.map_err(|e| Error::msg(e.to_string()))?

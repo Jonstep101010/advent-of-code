@@ -1,11 +1,34 @@
+use miette::Error;
+
 #[tracing::instrument]
 pub fn process(_input: &str) -> miette::Result<String> {
-	todo!("day 01 - part 2");
+	let mut dial_pos = 50;
+	let mut password = 0;
+	for line in _input.lines() {
+		let action_abs = line[1..]
+			.parse::<i32>()
+			.map_err(|e| Error::msg(e.to_string()))?;
+		let (full, partial) = (action_abs.div_euclid(100), action_abs.rem_euclid(100));
+		dial_pos = {
+			let new = if line.starts_with("R") {
+				dial_pos + partial
+			} else {
+				dial_pos - partial
+			};
+			password += full
+				+ if !(dial_pos == 0 || (0 < new && new < 100)) {
+					1
+				} else {
+					0
+				};
+			new.rem_euclid(100)
+		}
+	}
+	Ok(password.to_string())
 }
 
 #[cfg(test)]
 mod tests {
-	use std::{fs::File, io::Read, str};
 
 	use super::*;
 
