@@ -17,17 +17,17 @@ with open(INPUT) as f:
 			if left == right:
 				invalid_ids += i_outer
 				print(i_outer)
-			elif len(numstr) >= 2:
-				first_seq = left[0]
+			else:
+				first_seq = numstr[0]
 				first_rep = None
-				last_seq = None
+				# last_seq = None
 				maybe_seq = None
 				for i in range(1, len(numstr)):
 					if numstr[i] == first_seq:
 						# print("repeated number: ", left[i])
 						# there might be a sequence
 						first_rep = i
-						last_seq = i - 1
+						# last_seq = i - 1
 						maybe_seq = left[0:first_rep]
 						# print(maybe_seq)
 						if len(numstr) % len(maybe_seq) == 0:
