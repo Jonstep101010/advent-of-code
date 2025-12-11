@@ -1,13 +1,11 @@
-use miette::Error;
+use miette::IntoDiagnostic;
 
 #[tracing::instrument]
 pub fn process(_input: &str) -> miette::Result<String> {
 	let mut dial_pos = 50;
 	let mut password = 0;
 	for line in _input.lines() {
-		let action_abs = line[1..]
-			.parse::<i32>()
-			.map_err(|e| Error::msg(e.to_string()))?;
+		let action_abs = line[1..].parse::<i32>().into_diagnostic()?;
 		let (full, partial) = (action_abs.div_euclid(100), action_abs.rem_euclid(100));
 		dial_pos = {
 			let new = if line.starts_with("R") {
