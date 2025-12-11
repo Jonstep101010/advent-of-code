@@ -14,16 +14,15 @@ pub fn process(_input: &str) -> miette::Result<String> {
 			if numstr[..mid] == numstr[mid..] {
 				invalid_ids += i;
 			} else {
-				let first = *numstr.as_bytes().first().expect("first") as char;
+				let first = numstr.chars().next().expect("first");
 				for (ii, c) in numstr[1..].chars().enumerate() {
 					if c == first {
 						let maybe_seq = &numstr[..=ii];
-						if numstr.len().checked_rem(maybe_seq.len()) == Some(0) {
-							let needed_reps = numstr.len() / maybe_seq.len();
-							if maybe_seq.repeat(needed_reps) == numstr {
-								// println!("found {maybe_seq} in {numstr}");
-								invalid_ids += i;
-							}
+						if numstr.len().checked_rem(maybe_seq.len()) == Some(0)
+							&& maybe_seq.repeat(numstr.len() / maybe_seq.len()) == numstr
+						{
+							// println!("found {maybe_seq} in {numstr}");
+							invalid_ids += i;
 						}
 						break;
 					}
