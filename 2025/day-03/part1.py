@@ -9,56 +9,36 @@ jolts = []
 with open(INPUT) as f:
 	filestr = f.read()
 	battery_banks = filestr.splitlines()
-	output = open("output1jolts.txt", "w")
+	# output = open("output1jolts.txt", "w")
 	for battery_bank in battery_banks:
-		first = int(battery_bank[0])
-		largest_slice = []
+		largest_overall = None
+		second_largest = int(battery_bank[1])
 		bank_digits = []
-		largest_idx = None
-		bank_digits.append(first)
-		for c in battery_bank[1:]:
-			if largest_slice == [] or int(c) > max(largest_slice):
-				largest_slice.append(int(c))
+		for c in battery_bank:
+			if largest_overall is None or int(c) > largest_overall:
+				if largest_overall is not None:
+					second_largest = largest_overall
 				largest_idx = len(bank_digits)
+				largest_overall = int(c)
 			bank_digits.append(int(c))
-		largest_overall = max(max(largest_slice), first)
-		first_max = first
-		second_max = largest_overall
-		for i, n in enumerate(largest_slice):
-			if first_max < n and n != largest_overall:
-				first_max = n
-				largest_slice = largest_slice[i:]
 
-		def create_digit(largest_overall: int, n: int) -> int:
-			return int(str(largest_overall) + str(n))
+		def create_digit(first_digit: int, second_digit: int) -> int:
+			return int(str(first_digit) + str(second_digit))
 
-		largest_joined = create_digit(first_max, largest_overall)
-		if largest_slice == []:
-			print("lol")
-		if len(largest_slice) == 1:
-			print("fuck")
-		if first == largest_overall:
-			print("fucked")
-			largest_joined = create_digit(first, bank_digits[1])
-			largest_idx = 1
+		if largest_overall == bank_digits[0]:
+			largest_joined = create_digit(largest_overall, second_largest)
 		else:
-			largest_joined = create_digit(first_max, largest_overall)
-		for i, c in enumerate(bank_digits[largest_idx + 1 :]):
-			if c == largest_overall:
-				largest_idx = i
-				# print(bank_digits[largest_idx + 1 :])
-				break
-		for i, c in enumerate(bank_digits[largest_idx + 1 :]):
-			# print(c)
-			maybe_larger = create_digit(largest_overall, c)
+			largest_joined = create_digit(second_largest, largest_overall)
+		for i, second_digit in enumerate(bank_digits[largest_idx + 1 :]):
+			maybe_larger = create_digit(largest_overall, second_digit)
 			if maybe_larger > largest_joined:
 				largest_joined = maybe_larger
-		print("- -  - -")
-		print(f"jolts = {largest_joined}")
-		print(bank_digits)
 		jolts.append(largest_joined)
-		output.write(str(largest_joined) + "\n")
+		# print("- -  - -")
+		# print(f"joltage = {largest_joined}")
+		# print(bank_digits)
+		# output.write(str(largest_joined) + "\n")
 # print(jolts)
-output.close()
-print("- - TOTAL - -")
+# output.close()
+# print("- - TOTAL - -")
 print(sum(jolts))
