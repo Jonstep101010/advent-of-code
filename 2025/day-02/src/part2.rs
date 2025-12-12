@@ -1,14 +1,20 @@
+use itertools::Itertools;
+use miette::IntoDiagnostic;
+
 #[tracing::instrument]
 pub fn process(_input: &str) -> miette::Result<String> {
 	let mut invalid_ids = 0;
 	for range in _input.split(",") {
-		let rangesplit: Vec<&str> = range.trim().split("-").collect();
-		let (left, right) = (rangesplit[0], rangesplit[1]);
-		let cur_range = [left, right].map(|cur| {
-			cur.parse::<u64>()
-				.expect("valid number with whitespace trimmed")
-		});
-		for i in cur_range[0]..=cur_range[1] {
+		let rangesplit: (&str, &str) = range
+			.trim()
+			.split("-")
+			.collect_tuple()
+			.expect("two elements");
+		let (left, right) = (
+			rangesplit.0.parse::<u64>().into_diagnostic()?,
+			rangesplit.1.parse::<u64>().into_diagnostic()?,
+		);
+		for i in left..=right {
 			let numstr = i.to_string();
 			let mid: usize = numstr.len() / 2;
 			if numstr[..mid] == numstr[mid..] {
