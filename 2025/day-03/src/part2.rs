@@ -2,7 +2,7 @@
 pub fn process(_input: &str) -> miette::Result<String> {
 	let mut joltages_total = 0;
 	for battery_bank in _input.lines() {
-		let mut joltage_output: [Option<u32>; 12] = [None; 12];
+		let mut joltage_output: [u32; 12] = [0; 12];
 		let mut bank_digits: Vec<u32> = vec![];
 		let mut largest_idx = None;
 		for battery in battery_bank.chars() {
@@ -20,15 +20,12 @@ pub fn process(_input: &str) -> miette::Result<String> {
 				.rev() // last max in reversed
 				.max_by_key(|(_, battery)| *battery)
 				.unwrap();
-			joltage_output[i] = Some(*first_max);
+			joltage_output[i] = *first_max;
 			offset += relative_idx + 1;
 		}
-		let joltage_total = joltage_output
-			.iter()
-			.map(|c| c.unwrap())
-			.fold(0u64, |acc, num| {
-				acc * 10u64.pow(num.to_string().len() as u32) + num as u64
-			});
+		let joltage_total = joltage_output.iter().fold(0u64, |acc, &num| {
+			acc * 10u64.pow(num.to_string().len() as u32) + num as u64
+		});
 		joltages_total += joltage_total;
 	}
 	Ok(joltages_total.to_string())
