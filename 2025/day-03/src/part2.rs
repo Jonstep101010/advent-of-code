@@ -1,33 +1,26 @@
+use itertools::Itertools;
+
 #[tracing::instrument]
 pub fn process(_input: &str) -> miette::Result<String> {
-	let mut joltages_total = 0;
-	for battery_bank in _input.lines() {
-		let mut joltage_output: [u32; 12] = [0; 12];
-		let mut bank_digits: Vec<u32> = vec![];
-		let mut largest_idx = None;
-		for battery in battery_bank.chars() {
-			let battery = battery.to_digit(10).unwrap();
-			if largest_idx.is_none() || battery > bank_digits[largest_idx.unwrap()] {
-				largest_idx = Some(bank_digits.len());
+	let joltages_total = _input
+		.lines()
+		.map(|battery_bank| {
+			let mut joltages: Vec<char> = vec![];
+			let mut offset = 0;
+			for i in 0..12 {
+				let (idx, first_max) = &battery_bank[offset..(battery_bank.len() - 11 + i)]
+					.chars()
+					.enumerate()
+					.max_set_by_key(|(_, battery)| *battery)
+					.first()
+					.cloned()
+					.unwrap();
+				joltages.push(*first_max);
+				offset += idx + 1;
 			}
-			bank_digits.push(battery)
-		}
-		let mut offset = 0;
-		for i in 0..12 {
-			let (relative_idx, first_max) = bank_digits[offset..(bank_digits.len() - 11 + i)]
-				.iter()
-				.enumerate()
-				.rev() // last max in reversed
-				.max_by_key(|(_, battery)| *battery)
-				.unwrap();
-			joltage_output[i] = *first_max;
-			offset += relative_idx + 1;
-		}
-		let joltage_total = joltage_output.iter().fold(0u64, |acc, &num| {
-			acc * 10u64.pow(num.to_string().len() as u32) + num as u64
-		});
-		joltages_total += joltage_total;
-	}
+			joltages.iter().collect::<String>().parse::<u64>().unwrap()
+		})
+		.sum::<u64>();
 	Ok(joltages_total.to_string())
 }
 
