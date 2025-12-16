@@ -17,7 +17,7 @@ pub fn process(_input: &str) -> miette::Result<String> {
 	let roll_positions = _input
 		.lines()
 		.enumerate()
-		.map(|(y, line)| {
+		.flat_map(|(y, line)| {
 			line.chars().enumerate().filter_map(move |(x, c)| {
 				if c == '@' {
 					// dbg!(&x, &y);
@@ -27,13 +27,19 @@ pub fn process(_input: &str) -> miette::Result<String> {
 				}
 			})
 		})
-		.flatten()
 		.collect::<HashSet<IVec2>>();
-	// let linecount = lines.count();
-	// dbg!(&linecount);
-	// parse into array with locations of IVec2
-	let paper_rolls_accessible = 0;
-	Ok(paper_rolls_accessible.to_string())
+
+	let paper_rolls_inaccessible = roll_positions
+		.iter()
+		.filter(|&roll| {
+			// find nearest neighbors at DIRECTIONS
+			DIRECTIONS
+				.iter()
+				.filter(|&dir_vec| roll_positions.contains(&(roll + dir_vec)))
+				.count() >= 4
+		})
+		.count();
+	Ok((roll_positions.len() - paper_rolls_inaccessible).to_string())
 }
 
 #[cfg(test)]
