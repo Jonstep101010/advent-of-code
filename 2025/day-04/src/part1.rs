@@ -28,18 +28,17 @@ pub fn process(_input: &str) -> miette::Result<String> {
 			})
 		})
 		.collect::<HashSet<IVec2>>();
-
-	let paper_rolls_inaccessible = roll_positions
+	Ok(roll_positions
 		.iter()
 		.filter(|&roll| {
 			// find nearest neighbors at DIRECTIONS
 			DIRECTIONS
 				.iter()
 				.filter(|&dir_vec| roll_positions.contains(&(roll + dir_vec)))
-				.count() >= 4
+				.count() < 4
 		})
-		.count();
-	Ok((roll_positions.len() - paper_rolls_inaccessible).to_string())
+		.count()
+		.to_string())
 }
 
 #[cfg(test)]
