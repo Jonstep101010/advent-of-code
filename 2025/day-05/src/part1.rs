@@ -4,12 +4,10 @@ use miette::IntoDiagnostic;
 #[tracing::instrument]
 pub fn process(_input: &str) -> miette::Result<String> {
 	let mut fresh_ranges = vec![];
-	let mut pos = 0;
-	for (num, line) in _input.lines().enumerate() {
-		if line.is_empty() {
-			pos = num + 1;
-			break;
-		}
+	let mut lines = _input.lines();
+	while let Some(line) = lines.next()
+		&& !line.is_empty()
+	{
 		let split = line.split("-").collect_vec();
 		let range = std::ops::RangeInclusive::new(
 			split[0].parse::<usize>().into_diagnostic()?,
@@ -18,9 +16,7 @@ pub fn process(_input: &str) -> miette::Result<String> {
 		fresh_ranges.push(range);
 	}
 	// dbg!(&fresh_ranges);
-	let ingredients = _input
-		.lines()
-		.skip(pos)
+	let ingredients = lines
 		.map(|line| line.parse::<usize>().unwrap())
 		.collect_vec();
 	// dbg!(&ingredients);
