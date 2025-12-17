@@ -6,5 +6,33 @@ else:
 	INPUT = "input1.txt"
 
 with open(INPUT) as f:
-	filestr = f.read()
-	print(filestr)
+	lines = f.readlines()
+	roll_positions = set()
+	for y, line in enumerate(lines):
+		for x, c in enumerate(line):
+			if c == "@":
+				roll_positions.add((x, y))
+	print(len(roll_positions))
+	removable_rolls = 0
+	for x, y in roll_positions:
+		count = 0
+		if (x - 1, y) in roll_positions:
+			count += 1
+		if (x - 1, y + 1) in roll_positions:
+			count += 1
+		if (x - 1, y - 1) in roll_positions:
+			count += 1
+		if (x, y - 1) in roll_positions:
+			count += 1
+		if (x, y + 1) in roll_positions:
+			count += 1
+		if (x + 1, y) in roll_positions:
+			count += 1
+		if (x + 1, y + 1) in roll_positions:
+			count += 1
+		if (x + 1, y - 1) in roll_positions:
+			count += 1
+		# not too many neighbors: can take roll
+		removable_rolls += count < 4
+
+	print(removable_rolls)
