@@ -1,4 +1,4 @@
-use itertools::{Itertools, any};
+use itertools::Itertools;
 use miette::IntoDiagnostic;
 
 #[tracing::instrument]
@@ -20,19 +20,14 @@ pub fn process(_input: &str) -> miette::Result<String> {
 		.map(|line| line.parse::<usize>().unwrap())
 		.collect_vec();
 	// dbg!(&ingredients);
-	let mut total_fresh = 0;
-	for ingredient in ingredients {
-		total_fresh += match ingredient {
-			ingredient
-				if any(&fresh_ranges, |fresh_range| {
-					fresh_range.contains(&ingredient)
-				}) =>
-			{
-				1
-			}
-			_ => 0,
-		};
-	}
+	let total_fresh = ingredients
+		.into_iter()
+		.filter(|ingredient| {
+			itertools::any(&fresh_ranges, |fresh_range| {
+				fresh_range.contains(&ingredient)
+			})
+		})
+		.count();
 	Ok(total_fresh.to_string())
 }
 
