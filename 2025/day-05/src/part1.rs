@@ -24,7 +24,7 @@ pub fn process(_input: &str) -> miette::Result<String> {
 		.into_iter()
 		.filter(|ingredient| {
 			itertools::any(&fresh_ranges, |fresh_range| {
-				fresh_range.contains(&ingredient)
+				fresh_range.contains(ingredient)
 			})
 		})
 		.count();

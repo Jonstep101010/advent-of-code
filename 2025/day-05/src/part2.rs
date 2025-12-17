@@ -1,56 +1,27 @@
-use std::ops::RangeBounds;
-
-use itertools::{Itertools, any};
+use itertools::Itertools;
 use miette::IntoDiagnostic;
+use rangemap::range_inclusive_set;
 
 #[tracing::instrument]
 pub fn process(_input: &str) -> miette::Result<String> {
-	let mut fresh_ranges = vec![];
 	let mut lines = _input.lines();
+	let mut min_max_set = range_inclusive_set![];
 	while let Some(line) = lines.next()
 		&& !line.is_empty()
 	{
-		let split = line.split("-").collect_vec();
-		let range = std::ops::RangeInclusive::new(
-			split[0].parse::<usize>().into_diagnostic()?,
-			split[1].parse::<usize>().into_diagnostic()?,
-		);
-		fresh_ranges.push(range);
-	}
-	// dbg!(&fresh_ranges);
-	let min_start = fresh_ranges
-		.iter()
-		.map(|range_lol| {
-			// something
-			*range_lol.start()
-		})
-		.min()
-		.unwrap();
-	let max_end = fresh_ranges
-		.iter()
-		.map(|range_lol| {
-			// something
-			*range_lol.end()
-		})
-		.max()
-		.unwrap();
-	let mut contained = max_end + 1 - min_start;
-	for i in min_start..=max_end {
-		if !any(&fresh_ranges, |range_fresh| range_fresh.contains(&i)) {
-			contained -= 1;
-		}
+		let (start, end) = line
+			.split("-")
+			.map(|elem| elem.parse::<usize>().into_diagnostic())
+			.collect_tuple()
+			.unwrap();
+		min_max_set.insert(start?..=end?);
 	}
 
-	// dbg!(&ingredients);
-	// let total_fresh = ingredients
-	// 	.into_iter()
-	// 	.filter(|ingredient| {
-	// 		itertools::any(&fresh_ranges, |fresh_range| {
-	// 			fresh_range.contains(&ingredient)
-	// 		})
-	// 	})
-	// 	.count();
-	Ok(contained.to_string())
+	Ok(min_max_set
+		.iter()
+		.map(|contained| contained.end() + 1 - contained.start())
+		.sum::<usize>()
+		.to_string())
 }
 
 #[cfg(test)]
