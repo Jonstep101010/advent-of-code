@@ -1,6 +1,43 @@
+use itertools::{Itertools, any};
+use miette::IntoDiagnostic;
+
 #[tracing::instrument]
 pub fn process(_input: &str) -> miette::Result<String> {
-	todo!("day 01 - part 1");
+	let mut fresh_ranges = vec![];
+	let mut pos = 0;
+	for (num, line) in _input.lines().enumerate() {
+		if line.is_empty() {
+			pos = num + 1;
+			break;
+		}
+		let split = line.split("-").collect_vec();
+		let range = std::ops::RangeInclusive::new(
+			split[0].parse::<usize>().into_diagnostic()?,
+			split[1].parse::<usize>().into_diagnostic()?,
+		);
+		fresh_ranges.push(range);
+	}
+	// dbg!(&fresh_ranges);
+	let ingredients = _input
+		.lines()
+		.skip(pos)
+		.map(|line| line.parse::<usize>().unwrap())
+		.collect_vec();
+	// dbg!(&ingredients);
+	let mut total_fresh = 0;
+	for ingredient in ingredients {
+		total_fresh += match ingredient {
+			ingredient
+				if any(&fresh_ranges, |fresh_range| {
+					fresh_range.contains(&ingredient)
+				}) =>
+			{
+				1
+			}
+			_ => 0,
+		};
+	}
+	Ok(total_fresh.to_string())
 }
 
 #[cfg(test)]
