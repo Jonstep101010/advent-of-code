@@ -6,5 +6,13 @@ else:
 	INPUT = "input2.txt"
 
 with open(INPUT) as f:
-	filestr = f.read()
-	print(filestr)
+	rangeset = set()
+	while True:
+		line = f.readline()
+		if line == "\n":
+			break
+		split = [int(x) for x in line.split("-")]
+		start, end = split[0], split[1]
+		for n in range(start, end + 1):
+			rangeset.add(n)
+	print(len(rangeset))
