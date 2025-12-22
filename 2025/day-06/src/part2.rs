@@ -20,23 +20,19 @@ pub fn process(_input: &str) -> miette::Result<String> {
 	let mut total = 0;
 	let mut cur_digits: Vec<usize> = vec![];
 	for col in (0..ops.len()).rev() {
-		let mut digits = String::new();
-		for row in &rows {
-			if let Some(digit) = row.chars().nth(col) {
-				if digit != ' ' {
-					digits.push(digit);
-				}
-			}
-		}
+		let digits: String = rows
+			.iter()
+			.filter_map(|row| row.chars().nth(col).filter(|&digit| digit != ' '))
+			.collect();
 		if digits.is_empty() {
 			cur_digits.clear()
 		} else {
-			cur_digits.push(digits.parse::<usize>().unwrap())
-		}
-		match ops[col] {
-			'+' => total += cur_digits.iter().sum::<usize>(),
-			'*' => total += cur_digits.iter().product::<usize>(),
-			_ => {}
+			cur_digits.push(digits.parse::<usize>().unwrap());
+			match ops[col] {
+				'+' => total += cur_digits.iter().sum::<usize>(),
+				'*' => total += cur_digits.iter().product::<usize>(),
+				_ => continue,
+			}
 		}
 	}
 	Ok(total.to_string())
