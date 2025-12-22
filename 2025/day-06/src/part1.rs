@@ -1,36 +1,33 @@
-use itertools::Itertools;
+use itertools::{Itertools, any};
 use miette::IntoDiagnostic;
 
 #[tracing::instrument]
 pub fn process(_input: &str) -> miette::Result<String> {
 	let mut nums = vec![];
-	let mut ops: Option<Vec<&str>> = None;
 	for line in _input.lines() {
 		let split = line.split_whitespace();
-		if itertools::any(line.chars(), |c| c == '*' || c == '+') {
-			ops = Some(split.collect_vec());
-			break;
-		} else {
-			split.for_each(|str| {
-				let n = str.parse::<usize>().into_diagnostic().expect("valid n");
-				nums.push(n);
-			});
+		if any(line.chars(), |c| c == '*' || c == '+') {
+			let ops = split.collect_vec();
+			let opslen = ops.len();
+			return Ok(ops
+				.into_iter()
+				.enumerate()
+				.map(|(i, op)| {
+					let cur_range = nums[i..nums.len()].iter().step_by(opslen);
+					if op == "*" {
+						cur_range.product::<usize>()
+					} else {
+						cur_range.sum::<usize>()
+					}
+				})
+				.sum::<usize>()
+				.to_string());
+		}
+		for str in split {
+			nums.push(str.parse::<usize>().into_diagnostic()?);
 		}
 	}
-	let mut total: usize = 0;
-	let opslen = ops.clone().expect("operator trailing").iter().len();
-	for (i, op) in ops.expect("trailing ops").into_iter().enumerate() {
-		let cur = (i..nums.len())
-			.step_by(opslen)
-			.map(|ii| nums[ii])
-			.collect_vec();
-		total += if op == "*" {
-			cur.iter().product::<usize>()
-		} else {
-			cur.iter().sum::<usize>()
-		};
-	}
-	Ok(total.to_string())
+	unreachable!()
 }
 
 #[cfg(test)]
