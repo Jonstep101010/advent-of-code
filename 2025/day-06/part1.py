@@ -13,30 +13,19 @@ with open(INPUT) as f:
 	while True:
 		split = line.split()
 		if "+" in line or "*" in line or "-" in line or "/" in line:
+			mcalc = []
+			total = 0
+			for i, op in enumerate(split):
+				op = mul if op == "*" else add
+				cur = [calcs[ii] for ii in range(i, len(calcs), len(split))]
+				res = cur[0]
+				for n in cur[1:]:
+					res = op(res, n)
+				total += res
+			print(total)
 			break
 		else:
 			calcs.extend([int(x) for x in split])
-		line = f.readline().strip()
-	ops = split
-	# n_vecs = len(ops)
-	print(ops)
-	print(calcs)
-	mcalc = []
-	total = 0
-	for i, op in enumerate(ops):
-		op = mul if op == "*" else add
-		mcalc.append([calcs[i]])
-		for ii in range(len(ops) + i, len(calcs), len(ops)):
-			mcalc[i].append(calcs[ii])
-		# print(mcalc[i])
-		# print(" -  -  - ")
-		res = mcalc[i][0]
-		for n in mcalc[i][1:]:
-			# print(n)
-			res = op(res, n)
-		# print(res)
-		total += res
-print(total)
-
+			line = f.readline().strip()
 
 # expected: 33210 + 490 + 4243455 + 401 = 4277556
