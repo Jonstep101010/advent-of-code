@@ -17,24 +17,26 @@ pub fn process(_input: &str) -> miette::Result<String> {
 		.iter_mut()
 		.map(|line| line.pad_to_width_with_alignment(max_len, pad::Alignment::Left))
 		.collect_vec();
-	let mut total = 0;
 	let mut cur_digits: Vec<usize> = vec![];
-	for col in (0..ops.len()).rev() {
-		let digits: String = rows
-			.iter()
-			.filter_map(|row| row.chars().nth(col).filter(|&digit| digit != ' '))
-			.collect();
-		if digits.is_empty() {
-			cur_digits.clear()
-		} else {
-			cur_digits.push(digits.parse::<usize>().unwrap());
-			match ops[col] {
-				'+' => total += cur_digits.iter().sum::<usize>(),
-				'*' => total += cur_digits.iter().product::<usize>(),
-				_ => continue,
+	let total: usize = (0..ops.len())
+		.rev()
+		.filter_map(|col| {
+			let digits: String = rows
+				.iter()
+				.filter_map(|row| row.chars().nth(col).filter(|&digit| digit != ' '))
+				.collect();
+			if digits.is_empty() {
+				cur_digits.clear()
+			} else {
+				cur_digits.push(digits.parse::<usize>().unwrap());
 			}
-		}
-	}
+			match ops[col] {
+				'+' => Some(cur_digits.iter().sum::<usize>()),
+				'*' => Some(cur_digits.iter().product::<usize>()),
+				_ => None,
+			}
+		})
+		.sum();
 	Ok(total.to_string())
 }
 
