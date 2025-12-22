@@ -17,20 +17,17 @@ pub fn process(_input: &str) -> miette::Result<String> {
 			});
 		}
 	}
-	let mut calcs: Vec<Vec<usize>> = vec![];
 	let mut total: usize = 0;
 	let opslen = ops.clone().expect("operator trailing").iter().len();
 	for (i, op) in ops.expect("trailing ops").into_iter().enumerate() {
-		dbg!(&calcs);
-		calcs.push(vec![nums[i]]);
-		dbg!(&calcs);
-		(opslen + i..nums.len())
+		let cur = (i..nums.len())
 			.step_by(opslen)
-			.for_each(|ii| calcs[i].push(nums[ii]));
+			.map(|ii| nums[ii])
+			.collect_vec();
 		total += if op == "*" {
-			calcs[i].iter().product::<usize>()
+			cur.iter().product::<usize>()
 		} else {
-			calcs[i].iter().sum::<usize>()
+			cur.iter().sum::<usize>()
 		};
 	}
 	Ok(total.to_string())
