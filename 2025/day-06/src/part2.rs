@@ -1,6 +1,45 @@
+use itertools::{Itertools, max};
+use pad::PadStr;
+
 #[tracing::instrument]
 pub fn process(_input: &str) -> miette::Result<String> {
-	todo!("day 01 - part 2");
+	let mut lines = vec![];
+	for line in _input.lines() {
+		lines.push(line.trim_matches('\n'));
+	}
+	let ops = lines
+		.pop()
+		.expect("operators trailing")
+		.chars()
+		.collect_vec();
+	let max_len = max(lines.iter().map(|line| line.len())).expect("maximum length");
+	let rows = lines
+		.iter_mut()
+		.map(|line| line.pad_to_width_with_alignment(max_len, pad::Alignment::Left))
+		.collect_vec();
+	let mut total = 0;
+	let mut cur_digits: Vec<usize> = vec![];
+	for col in (0..ops.len()).rev() {
+		let mut digits = String::new();
+		for row in &rows {
+			if let Some(digit) = row.chars().nth(col) {
+				if digit != ' ' {
+					digits.push(digit);
+				}
+			}
+		}
+		if digits.is_empty() {
+			cur_digits.clear()
+		} else {
+			cur_digits.push(digits.parse::<usize>().unwrap())
+		}
+		match ops[col] {
+			'+' => total += cur_digits.iter().sum::<usize>(),
+			'*' => total += cur_digits.iter().product::<usize>(),
+			_ => {}
+		}
+	}
+	Ok(total.to_string())
 }
 
 #[cfg(test)]
@@ -9,9 +48,12 @@ mod tests {
 
 	#[test]
 	fn test_process() -> miette::Result<()> {
-		todo!("haven't built test yet");
-		let input = "";
-		assert_eq!("", process(input)?);
+		let input = "123 328  51 64 
+ 45 64  387 23 
+  6 98  215 314
+*   +   *   +  
+";
+		assert_eq!("3263827", process(input)?);
 		Ok(())
 	}
 }
