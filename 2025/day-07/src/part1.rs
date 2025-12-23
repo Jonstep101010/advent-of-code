@@ -6,23 +6,32 @@ pub fn process(input: &str) -> miette::Result<String> {
 		.lines()
 		.enumerate()
 		.find(|(_y, line)| line.contains('S'))
-		.and_then(|(y, line)| line.find('S').map(|x| (x, y)));
-	let mut beam_positions: HashSet<(usize, usize)> = HashSet::from([manifold_pos.unwrap()]);
-	let mut splits = 0;
-	for (y, line) in input.lines().enumerate() {
-		for (x, c) in line.chars().enumerate() {
-			match (c, beam_positions.contains(&(x, y.wrapping_sub(1)))) {
-				('^', true) => {
-					splits += (beam_positions.insert((x - 1, y))
-						| beam_positions.insert((x + 1, y))) as usize;
-				}
-				(_, true) => {
-					beam_positions.insert((x, y));
-				}
-				(_, _) => {}
-			}
-		}
-	}
+		.and_then(|(y, line)| line.find('S').map(|x| (x, y)))
+		.unwrap();
+	let mut beam_positions: HashSet<(usize, usize)> = HashSet::from([manifold_pos]);
+	let splits = input
+		.lines()
+		.enumerate()
+		.skip(manifold_pos.1 + 1)
+		.map(|(y, line)| {
+			line.chars()
+				.enumerate()
+				.map(
+					|(x, c)| match (c, beam_positions.contains(&(x, y.wrapping_sub(1)))) {
+						('^', true) => {
+							(beam_positions.insert((x - 1, y)) | beam_positions.insert((x + 1, y)))
+								as usize
+						}
+						(_, true) => {
+							beam_positions.insert((x, y));
+							0
+						}
+						(_, _) => 0,
+					},
+				)
+				.sum::<usize>()
+		})
+		.sum::<usize>();
 	Ok(splits.to_string())
 }
 
