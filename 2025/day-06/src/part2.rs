@@ -3,10 +3,10 @@ use pad::PadStr;
 
 #[tracing::instrument]
 pub fn process(_input: &str) -> miette::Result<String> {
-	let mut lines = vec![];
-	for line in _input.lines() {
-		lines.push(line.trim_matches('\n'));
-	}
+	let mut lines = _input
+		.lines()
+		.map(|line| line.trim_matches('\n'))
+		.collect_vec();
 	let ops = lines
 		.pop()
 		.expect("operators trailing")
@@ -17,7 +17,7 @@ pub fn process(_input: &str) -> miette::Result<String> {
 		.iter_mut()
 		.map(|line| line.pad_to_width_with_alignment(max_len, pad::Alignment::Left))
 		.collect_vec();
-	let mut cur_digits: Vec<usize> = vec![];
+	let mut cur_digits: Vec<usize> = Vec::with_capacity(lines.len());
 	let total: usize = (0..ops.len())
 		.rev()
 		.filter_map(|col| {
@@ -26,7 +26,7 @@ pub fn process(_input: &str) -> miette::Result<String> {
 				.filter_map(|row| row.chars().nth(col).filter(|&digit| digit != ' '))
 				.collect();
 			if digits.is_empty() {
-				cur_digits.clear()
+				cur_digits.clear();
 			} else {
 				cur_digits.push(digits.parse::<usize>().unwrap());
 			}
