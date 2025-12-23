@@ -2,36 +2,33 @@ use std::collections::HashSet;
 
 #[tracing::instrument]
 pub fn process(input: &str) -> miette::Result<String> {
-	let manifold_pos = input
-		.lines()
-		.enumerate()
+	let mut lines_it = input.lines().enumerate();
+	let manifold_pos = lines_it
 		.find(|(_y, line)| line.contains('S'))
 		.and_then(|(y, line)| line.find('S').map(|x| (x, y)))
 		.unwrap();
-	let mut beam_positions: HashSet<(usize, usize)> = HashSet::from([manifold_pos]);
-	let splits = input
-		.lines()
-		.enumerate()
-		.skip(manifold_pos.1 + 1)
-		.map(|(y, line)| {
-			line.chars()
+	let beam_positions: HashSet<(usize, usize)> = HashSet::from([manifold_pos]);
+	let (splits, _) = lines_it.fold(
+		(0, beam_positions),
+		|(splits, mut beam_positions), (y, line)| {
+			let line_splits = line
+				.chars()
 				.enumerate()
-				.map(
-					|(x, c)| match (c, beam_positions.contains(&(x, y.wrapping_sub(1)))) {
-						('^', true) => {
+				.filter_map(|(x, c)| {
+					beam_positions.contains(&(x, y.wrapping_sub(1))).then(|| {
+						if c == '^' {
 							(beam_positions.insert((x - 1, y)) | beam_positions.insert((x + 1, y)))
 								as usize
-						}
-						(_, true) => {
+						} else {
 							beam_positions.insert((x, y));
 							0
 						}
-						(_, _) => 0,
-					},
-				)
-				.sum::<usize>()
-		})
-		.sum::<usize>();
+					})
+				})
+				.sum::<usize>();
+			(splits + line_splits, beam_positions)
+		},
+	);
 	Ok(splits.to_string())
 }
 
