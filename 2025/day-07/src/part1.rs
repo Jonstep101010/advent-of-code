@@ -1,26 +1,25 @@
 use std::collections::HashSet;
 
-use itertools::Itertools;
-
 #[tracing::instrument]
 pub fn process(input: &str) -> miette::Result<String> {
 	let manifold_pos = input
 		.lines()
 		.enumerate()
 		.find(|(_y, line)| line.contains('S'))
-		.map(|(y, line)| line.find('S').and_then(|x| Some((x, y))))
-		.flatten();
-	let mut beam_positions: HashSet<(usize, usize)> = HashSet::new();
-	debug_assert!(beam_positions.insert(manifold_pos.unwrap()));
+		.and_then(|(y, line)| line.find('S').map(|x| (x, y)));
+	let mut beam_positions: HashSet<(usize, usize)> = HashSet::from([manifold_pos.unwrap()]);
 	let mut splits = 0;
 	for (y, line) in input.lines().enumerate() {
 		for (x, c) in line.chars().enumerate() {
-			if c == '^' && beam_positions.contains(&(x, y - 1)) {
-				beam_positions.insert((x - 1, y));
-				beam_positions.insert((x + 1, y));
-				splits += 1;
-			} else if beam_positions.contains(&(x, y.wrapping_sub(1))) {
-				beam_positions.insert((x, y));
+			match (c, beam_positions.contains(&(x, y.wrapping_sub(1)))) {
+				('^', true) => {
+					splits += (beam_positions.insert((x - 1, y))
+						| beam_positions.insert((x + 1, y))) as usize;
+				}
+				(_, true) => {
+					beam_positions.insert((x, y));
+				}
+				(_, _) => {}
 			}
 		}
 	}
