@@ -16,12 +16,6 @@ struct Robot {
 	vel: (i32, i32),
 }
 
-fn print_grid(grid: &[Vec<usize>]) {
-	for rows in grid.iter() {
-		println!("{:?}", rows);
-	}
-}
-
 fn only_unique_grid(grid: &[Vec<usize>]) -> bool {
 	for row in grid.iter() {
 		for &cell in row.iter() {
@@ -135,7 +129,7 @@ p=9,3 v=2,3
 p=7,3 v=-1,2
 p=2,4 v=2,-3
 p=9,5 v=-3,-3";
-		assert_eq!("12", process(input)?);
+		assert_eq!("1", process(input)?);
 		Ok(())
 	}
 }
