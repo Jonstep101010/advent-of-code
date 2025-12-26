@@ -8,11 +8,12 @@ use std::{
 use grid::{Grid, grid};
 use itertools::Itertools;
 
-#[cfg(test)]
-fn display_grid(grid: &mut Grid<char>) {
+#[cfg(not(test))]
+fn display_grid(grid: &Grid<char>) {
 	// clear screen
 	print!("\x1B[2J\x1B[1;1H");
 	// rotate to get the right orientation for printing
+	let mut grid = grid.clone();
 	grid.rotate_left();
 	for row in grid.iter_rows() {
 		for &c in row {
@@ -21,31 +22,9 @@ fn display_grid(grid: &mut Grid<char>) {
 		println!();
 	}
 	std::io::stdout().flush().unwrap();
-	// reset orientation
-	grid.rotate_right();
+	std::thread::sleep(std::time::Duration::from_millis(20))
 }
 
-///
-/// Example:
-/// ```
-/// use day_15::part1::print_grid;
-/// let input = "#######
-/// #...O..
-/// #......
-/// ";
-/// let mut grid = parse_grid(input);
-/// assert_eq!(grid.size(), (7, 3));
-/// assert_eq!(grid[(0, 2)], '#');
-/// assert_eq!(grid[(1, 2)], '#');
-/// assert_eq!(grid[(1, 1)], '.');
-/// assert_eq!(grid[(4, 1)], 'O');
-/// assert_eq!(grid[(3, 1)], '.');
-/// assert_eq!(grid[(5, 1)], '.');
-/// assert_eq!(grid[(4, 2)], '#');
-/// assert_eq!(grid[(0, 1)], '#');
-/// assert_eq!(grid[(6, 0)], '.');
-/// print_grid(&mut grid);
-/// ```
 ///
 /// for each line we want to have have a shelf
 /// where the later the line, the lower the shelf will be
@@ -145,7 +124,7 @@ impl Warehouse {
 		self.grid[(self.robot.0 as usize, self.robot.1 as usize)] = '.';
 		self.robot += self.cur_move;
 		self.grid[(self.robot.0 as usize, self.robot.1 as usize)] = '@';
-		#[cfg(test)]
+		#[cfg(not(test))]
 		display_grid(&mut self.grid);
 	}
 	fn move_current_box(&mut self, box_pos: Pos, new_position: Pos) -> Option<Pos> {
@@ -153,7 +132,7 @@ impl Warehouse {
 		self.boxes.insert(new_position);
 		self.grid[(new_position.0 as usize, new_position.1 as usize)] = 'O';
 		self.grid[(box_pos.0 as usize, box_pos.1 as usize)] = '.';
-		#[cfg(test)]
+		#[cfg(not(test))]
 		display_grid(&mut self.grid);
 		Some(new_position)
 	}
@@ -163,7 +142,7 @@ impl Warehouse {
 			None
 		} else if self.grid[(new_position.0 as usize, new_position.1 as usize)] == '.' {
 			// the box downstream is free
-			return self.move_current_box(box_pos, new_position);
+			self.move_current_box(box_pos, new_position)
 		} else {
 			let next_box = self.move_box(box_pos + self.cur_move);
 			// try moving the box downstream
@@ -181,7 +160,7 @@ impl Warehouse {
 		while !self.moves.is_empty() {
 			self.cur_move = self.moves.pop_front().unwrap();
 			let next_pos = self.robot + self.cur_move;
-			#[cfg(test)]
+			#[cfg(not(test))]
 			display_grid(&mut self.grid);
 			if self.walls.contains(&next_pos) {
 				// skip moves in front of walls
@@ -216,12 +195,8 @@ impl Warehouse {
 
 fn find_robot(grid: &Grid<char>) -> Pos {
 	for (x, mut row) in grid.iter_rows().enumerate() {
-		let rowsearch = row.find_position(|&&c| c == '@');
-		if rowsearch.is_some() {
-			let y = rowsearch.unwrap().0 as i32;
-			let robot_pos = Pos(x as i32, y);
-			dbg!(&robot_pos);
-			return robot_pos;
+		if let Some((y, _x)) = row.find_position(|&&c| c == '@') {
+			return Pos(x as i32, y as i32);
 		}
 	}
 	unreachable!("there always has to be a robot")
