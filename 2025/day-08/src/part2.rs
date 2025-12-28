@@ -4,6 +4,7 @@ use petgraph::unionfind::UnionFind;
 pub fn process(_input: &str) -> miette::Result<String> {
 	let (_, pos) = parse(_input).expect("correct parse");
 	let mut connections = UnionFind::new(pos.len());
+	let mut total_components = pos.len();
 	for ((idx_a, vec_a), (idx_b, vec_b), _) in pos
 		.iter()
 		.enumerate()
@@ -19,12 +20,10 @@ pub fn process(_input: &str) -> miette::Result<String> {
 	// not by_key as no float ord
 	{
 		// check if unified (merged), check if all in pos in connections, return prod(x positions)
-		if connections.union(idx_a, idx_b)
-			&& (0..pos.len())
-				.tuple_windows()
-				.all(|(a, b)| connections.equiv(a, b))
-		{
-			return Ok((vec_a.x * vec_b.x).to_string());
+		match (connections.union(idx_a, idx_b), total_components) {
+			(true, 2) => return Ok((vec_a.x * vec_b.x).to_string()),
+			(true, _) => total_components -= 1,
+			_ => continue,
 		}
 	}
 	unreachable!()
