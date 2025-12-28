@@ -1,6 +1,45 @@
+use glam::IVec3;
+use petgraph::unionfind::UnionFind;
 #[tracing::instrument]
 pub fn process(_input: &str) -> miette::Result<String> {
-	todo!("day 01 - part 1");
+	let (_, pos) = parse(_input).expect("correct parse");
+	let mut connections = UnionFind::new(pos.len());
+	const MAX_CONNECTIONS: usize = 1000;
+	pos.iter()
+		.enumerate()
+		.tuple_combinations()
+		.map(|((idx_a, vec_a), (idx_b, vec_b))| {
+			(idx_a, idx_b, vec_a.as_vec3().distance(vec_b.as_vec3()))
+		}) // dist
+		.sorted_by(|(_, _, dist_a), (_, _, dist_b)| dist_a.partial_cmp(dist_b).unwrap())
+		// not by_key as no float ord
+		.take(MAX_CONNECTIONS)
+		.for_each(|(idx_a, idx_b, _)| {
+			// union of indeces in pos
+			connections.union(idx_a, idx_b);
+		});
+	Ok(connections
+		.into_labeling()
+		.iter()
+		.counts() // connections sharing label
+		.into_iter()
+		.sorted_by_key(|&(_label, size)| size)
+		.rev() // size descending!
+		.map(|(_label, size)| size)
+		.take(3) //largest
+		.product::<usize>()
+		.to_string())
+}
+
+use itertools::Itertools;
+use nom::{IResult, Parser, character::complete::line_ending, multi::separated_list1};
+fn parse(input: &str) -> IResult<&str, Vec<IVec3>> {
+	separated_list1(
+		line_ending,
+		separated_list1(nom::bytes::tag(","), nom::character::complete::i32)
+			.map(|v| IVec3::from_slice(&v)),
+	)
+	.parse(input)
 }
 
 #[cfg(test)]
@@ -28,8 +67,10 @@ mod tests {
 941,993,340
 862,61,35
 984,92,344
-425,690,689";
-		assert_eq!("40", process(input)?);
+425,690,689
+";
+		// fully connected, cannot reach 40 (unless input twice as long)
+		assert_eq!("20", process(input)?);
 		Ok(())
 	}
 }
