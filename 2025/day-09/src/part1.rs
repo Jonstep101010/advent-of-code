@@ -1,25 +1,13 @@
-use glam::IVec2;
-
-fn square(p: &IVec2, q: &IVec2) -> u64 {
-	let tmp = u64::from((p.x.abs_diff(q.x) + 1) * (p.y.abs_diff(q.y) + 1));
-	dbg!(tmp)
-}
+use glam::U64Vec2;
 
 #[tracing::instrument]
 pub fn process(input: &str) -> miette::Result<String> {
 	let (_, red_tile_pos) = parse(input).expect("parse success");
-	// dbg!(&red_tile_pos);
-	// find biggest/smallest x and y
-	// calculate size from max difference in each axis
-	// biggest is in between 2/5 and 11/1
 	let max_area = red_tile_pos
 		.iter()
 		.tuple_combinations()
-		.map(|(a, b)| {
-			square(a, b)
-			// dbg!(a, b);
-			// some max calc
-		})
+		.map(|(p, q)| (p.x.abs_diff(q.x) + 1) * (p.y.abs_diff(q.y) + 1)) // area
+		// .map(|(&p, &q)| (p.max(q) - p.min(q) + U64Vec2::ONE).element_product()) // edge lengths axis multiplication (vec.x * vec.y)
 		.max()
 		.unwrap();
 	Ok(max_area.to_string())
@@ -27,15 +15,15 @@ pub fn process(input: &str) -> miette::Result<String> {
 
 use itertools::Itertools;
 use nom::{IResult, Parser, character::complete::line_ending, multi::separated_list1};
-fn parse(input: &str) -> IResult<&str, Vec<IVec2>> {
+fn parse(input: &str) -> IResult<&str, Vec<U64Vec2>> {
 	separated_list1(
 		line_ending,
 		nom::sequence::separated_pair(
-			nom::character::complete::i32,
+			nom::character::complete::u64,
 			nom::bytes::tag(","),
-			nom::character::complete::i32,
+			nom::character::complete::u64,
 		)
-		.map(|(x, y)| IVec2::new(x, y)),
+		.map(|(x, y)| U64Vec2::new(x, y)),
 	)
 	.parse(input)
 }
