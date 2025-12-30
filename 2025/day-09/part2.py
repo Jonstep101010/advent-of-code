@@ -7,22 +7,8 @@ else:
 	INPUT = "input2.txt"
 
 
-# valid max are only within lines l/r for x or above/below for y
-
-
 def keyfn_by_area(tuple_p_q_area):
 	return tuple_p_q_area[2]
-
-
-def in_bounds(p, q, line):
-	start, end = line
-	left = max(p[0], q[0]) <= min(start[0], end[0])
-	right = max(start[0], end[0]) <= min(p[0], q[0])
-	above = max(p[1], q[1]) <= min(start[1], end[1])
-	below = max(start[1], end[1]) <= min(p[1], q[1])
-
-	within_bounds = left | right | below | above
-	return within_bounds
 
 
 with open(INPUT) as f:
@@ -32,12 +18,26 @@ with open(INPUT) as f:
 		for p, q in itertools.combinations(positions, 2)
 		if p[0] == q[0] or p[1] == q[1]
 	]
-	possible_areas = [
-		(p, q, ((abs(p[0] - q[0]) + 1) * (abs(p[1] - q[1]) + 1)))
-		for p, q in itertools.combinations(positions, 2)
-	]
-	allowed_areas = []
-	for p, q, area in sorted(possible_areas, key=keyfn_by_area, reverse=True):
-		if all(in_bounds(p, q, line) for line in lines):
-			print(area)
+	possible_areas = sorted(
+		[
+			(p, q, ((abs(p[0] - q[0]) + 1) * (abs(p[1] - q[1]) + 1)))
+			for p, q in itertools.combinations(positions, 2)
+		],
+		key=keyfn_by_area,
+		reverse=True,
+	)
+
+	for p, q, size in possible_areas:
+
+		def out_of_bounds(p, q, start, end):
+			"""validate rectangle (p and q) is not within line (start and end)"""
+			x_left = max(p[0], q[0]) <= min(start[0], end[0])
+			x_right = min(p[0], q[0]) >= max(start[0], end[0])
+			y_below = max(p[1], q[1]) <= min(start[1], end[1])
+			y_above = min(p[1], q[1]) >= max(start[1], end[1])
+
+			return x_left | x_right | y_below | y_above
+
+		if all(out_of_bounds(p, q, start, end) for start, end in lines):
+			print(size)
 			break
