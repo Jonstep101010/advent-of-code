@@ -41,3 +41,19 @@ with open(INPUT) as f:
 		if all(out_of_bounds(p, q, start, end) for start, end in lines):
 			print(size)
 			break
+	# import shapely
+	# from shapely import LineString, ops
+
+	# green_area = shapely.prepared.prep(
+	# 	shapely.union_all(
+	# 		list(ops.polygonize([LineString((a, b)) for a, b in lines]))
+	# 	).buffer(0.5, join_style=2)
+	# )
+
+	# for p, q, size in possible_areas:
+	# 	minx, maxx = sorted([p[0], q[0]])
+	# 	miny, maxy = sorted([p[1], q[1]])
+	# 	rect = shapely.box(minx - 0.5, miny - 0.5, maxx + 0.5, maxy + 0.5)
+	# 	if green_area.covers(rect):
+	# 		print(int(rect.area))
+	# 		break
