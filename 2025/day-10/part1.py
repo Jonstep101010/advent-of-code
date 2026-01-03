@@ -24,14 +24,32 @@ with open(INPUT) as f:
 				case _:
 					assert False
 		indicator_seqs.append(seq)
-		seq_tuples_str = m[1:-1]
-		seq_tuples = [
-			tuple(int(j) for j in mj.strip("()").split(",")) for mj in seq_tuples_str
+		seq_buttons = [
+			tuple(int(j) for j in mj.strip("()").split(",")) for mj in m[1:-1]
 		]
-		wiring_schematics.append(seq_tuples)
+		wiring_schematics.append(seq_buttons)
 		seq_joltages = [int(j) for j in m[-1].strip("{}").split(",")]
 		joltages.append(seq_joltages)
 		machines.append((indicator_seqs[-1], wiring_schematics[-1], joltages[-1]))
 	# indicators are initially off
-	for i, _ in enumerate(machines_input):
-		print(machines[i])
+
+	def process(machine) -> int:
+		machine_total = 0
+		state_org = tuple(False for _ in range(len(machine[0])))
+		tuple_state = tuple(machine[0])
+		machine_set = set()
+		machine_set.add(state_org)
+		while True:
+			new_set = set()
+			for state in machine_set:
+				for button in machine[1]:
+					state_list = list(state)
+					for bit in button:
+						state_list[bit] = not state_list[bit]
+					new_set.add(tuple(state_list))
+			machine_set = new_set
+			machine_total += 1
+			if tuple_state in machine_set:
+				return machine_total
+
+	print(sum([process(machines[i]) for i, _ in enumerate(machines_input)]))
