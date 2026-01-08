@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::HashMap;
 
 use nom::{
 	IResult, Parser,
@@ -7,30 +7,57 @@ use nom::{
 	sequence::delimited,
 };
 
-fn validate_button_sequences(machine: Machine) -> i32 {
-	dbg!(&machine);
-	let mut machine_set = HashSet::new();
-	assert!(machine_set.insert(vec![false; machine.goal_indicator_seq.len()]));
-	let mut machine_total = 0;
-	loop {
-		machine_set = machine_set
-			.into_iter()
-			.flat_map(|state| {
-				machine.button_seq.iter().map(move |button| {
-					let mut new_state = state.clone();
-					for bit in button {
-						let val = new_state.get_mut(*bit as usize).unwrap();
-						*val = !*val
-					}
-					new_state
-				})
-			})
-			.collect();
-		machine_total += 1;
-		if machine_set.contains(&machine.goal_indicator_seq) {
-			return machine_total;
-		}
+fn button_combination_patterns(
+	coeffs: &[Vec<bool>],
+	num_indicators: usize,
+) -> HashMap<Vec<bool>, usize> {
+	let mut patterns = HashMap::new();
+	let num_buttons = coeffs.len();
+
+	// Try all 2^n subsets of buttons (represented as bitmasks)
+	for mask in 0u32..(1 << num_buttons) {
+		// Build the XOR effect of all buttons enabled in `mask` using a fold
+		let effect = coeffs
+			.iter()
+			.enumerate()
+			// keep only buttons whose bit is set in `mask`
+			.filter(|(idx, _)| (mask & (1u32 << (*idx as u32))) != 0)
+			// fold by XOR-ing each selected button's coefficient row into the accumulator
+			.fold(vec![false; num_indicators], |mut acc, (_, coeff)| {
+				acc.iter_mut().zip(coeff).for_each(|(e, &bit)| *e ^= bit);
+				acc
+			});
+
+		// Store minimal press count for this effect pattern
+		let num_presses = mask.count_ones() as usize;
+		patterns
+			.entry(effect)
+			.and_modify(|existing: &mut usize| *existing = (*existing).min(num_presses))
+			.or_insert(num_presses);
 	}
+
+	patterns
+}
+
+fn validate_button_sequences(machine: Machine) -> i32 {
+	let num_indicators = machine.goal_indicator_seq.len();
+
+	// Convert buttons to coefficient matrix (1 if button affects indicator, 0 otherwise)
+	let coeffs: Vec<Vec<bool>> = machine
+		.button_seq
+		.iter()
+		.map(|button| {
+			(0..num_indicators)
+				.map(|i| button.contains(&(i as u8)))
+				.collect()
+		})
+		.collect();
+
+	// Precompute all reachable patterns and their minimal press counts
+	button_combination_patterns(&coeffs, num_indicators)
+		.get(&machine.goal_indicator_seq)
+		.copied()
+		.unwrap_or(usize::MAX) as i32
 }
 
 #[tracing::instrument]
@@ -47,7 +74,7 @@ pub fn process(input: &str) -> miette::Result<String> {
 struct Machine {
 	goal_indicator_seq: Vec<bool>,
 	button_seq: Vec<Vec<u8>>,
-	joltage_seq: Vec<u8>,
+	joltage_seq: Vec<u16>,
 }
 
 fn parse(input: &str) -> IResult<&str, Vec<Machine>> {
@@ -101,10 +128,10 @@ fn parse_button_seq(input: &str) -> IResult<&str, Vec<u8>> {
 	.parse(input)
 }
 
-fn parse_joltage_seq(input: &str) -> IResult<&str, Vec<u8>> {
+fn parse_joltage_seq(input: &str) -> IResult<&str, Vec<u16>> {
 	delimited(
 		complete::char('{'),
-		separated_list1(complete::char(','), complete::u8),
+		separated_list1(complete::char(','), nom::character::complete::u16),
 		complete::char('}'),
 	)
 	.parse(input)
