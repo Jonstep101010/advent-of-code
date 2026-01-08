@@ -1,9 +1,38 @@
+import itertools
 import sys
 
 if len(sys.argv) > 1:
 	INPUT = sys.argv[1]
 else:
 	INPUT = "input1.txt"
+
+
+def button_combination_patterns(
+	coeffs: list[tuple[int, ...]],
+) -> dict[tuple[int, ...], dict[tuple[int, ...], int]]:
+	"""
+	Group all possible button combinations by parity pattern (for indicators this IS the effect).
+
+	For each parity pattern, store the minimal button press count needed to achieve it.
+	"""
+	num_indicators = len(coeffs[0])
+	patterns_by_parity = {}
+
+	# Try all 2^n subsets of buttons
+	for num_buttons in range(len(coeffs) + 1):
+		for button_indices in itertools.combinations(range(len(coeffs)), num_buttons):
+			# Sum coefficients for selected buttons modulo 2 (XOR for binary)
+			effect = tuple(
+				sum(coeffs[i][j] for i in button_indices) % 2
+				for j in range(num_indicators)
+			)
+
+			# Store minimal press count for this effect
+			if effect not in patterns_by_parity:
+				patterns_by_parity[effect] = num_buttons
+
+	return patterns_by_parity
+
 
 with open(INPUT) as f:
 	machines_input = [line.strip().split(" ") for line in f.readlines()]
@@ -23,34 +52,32 @@ with open(INPUT) as f:
 		]
 		seq_joltages = [int(j) for j in m[-1].strip("{}").split(",")]
 		machines.append((tuple(indicator_seq), seq_buttons, seq_joltages))
-	# indicators are initially off
 
 	def process(
 		indicator_seq: tuple[bool, ...],
 		button_seq: list[tuple[int, ...]],
 	) -> int:
-		machine_total = 0
-		machine_set = set()
-		state_off = tuple(False for _ in range(len(indicator_seq)))
-		machine_set.add(state_off)
-		while True:
-			new_set = set()
-			for state in machine_set:
-				for button in button_seq:
-					state_list = list(state)
-					for bit in button:
-						state_list[bit] = not state_list[bit]
-					new_set.add(tuple(state_list))
-			machine_set = new_set
-			machine_total += 1
-			if indicator_seq in machine_set:
-				return machine_total
+		"""
+		Find minimal button presses using precomputed combinations.
+		For boolean indicators, each button combination produces a unique XOR pattern.
+		"""
+		# Convert indicator bools to integers (False=0, True=1)
+		goal = tuple(int(b) for b in indicator_seq)
+
+		# Convert buttons to binary coefficients (1 if button affects indicator, 0 otherwise)
+		coeffs = [
+			tuple(int(i in button) for i in range(len(indicator_seq)))
+			for button in button_seq
+		]
+
+		patterns = button_combination_patterns(coeffs)
+
+		# For boolean toggle problems, we just need to find the pattern that matches our goal
+		if goal in patterns:
+			return patterns[goal]
+		else:
+			return float("inf")
 
 	print(
-		sum(
-			[
-				process(machines[i][0], machines[i][1])
-				for i, _ in enumerate(machines_input)
-			]
-		)
+		sum([process(machines[i][0], machines[i][1]) for i, _ in enumerate(machines)])
 	)
