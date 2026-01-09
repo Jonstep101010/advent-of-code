@@ -17,14 +17,12 @@ fn button_combination_patterns(
 	// Try all 2^n subsets of buttons (represented as bitmasks)
 	for mask in 0u32..(1 << num_buttons) {
 		// Build the XOR effect of all buttons enabled in `mask` using a fold
-		let effect = coeffs
-			.iter()
-			.enumerate()
-			// keep only buttons whose bit is set in `mask`
-			.filter(|(idx, _)| (mask & (1u32 << (*idx as u32))) != 0)
-			// fold by XOR-ing each selected button's coefficient row into the accumulator
-			.fold(vec![false; num_indicators], |mut acc, (_, coeff)| {
-				acc.iter_mut().zip(coeff).for_each(|(e, &bit)| *e ^= bit);
+		let effect = (0..num_buttons)
+			.filter(|&idx| (mask & (1u32 << idx)) != 0)
+			.fold(vec![false; num_indicators], |mut acc, idx| {
+				acc.iter_mut()
+					.zip(&coeffs[idx])
+					.for_each(|(e, &bit)| *e ^= bit);
 				acc
 			});
 
