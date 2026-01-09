@@ -11,6 +11,8 @@ nom.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true
 miette.workspace = true
+cached = { version = "0.56.0", features = ["proc_macro"] }
+rayon = "1.11.0"
 
 [dev-dependencies]
 divan.workspace = true

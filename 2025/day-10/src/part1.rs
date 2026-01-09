@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use cached::proc_macro::cached;
 use nom::{
 	IResult, Parser,
 	character::complete::{self, line_ending, space1},
@@ -7,8 +8,9 @@ use nom::{
 	sequence::delimited,
 };
 
+#[cached]
 fn button_combination_patterns(
-	coeffs: &[Vec<bool>],
+	coeffs: Vec<Vec<bool>>,
 	num_indicators: usize,
 ) -> HashMap<Vec<bool>, usize> {
 	let mut patterns = HashMap::new();
@@ -51,8 +53,8 @@ fn validate_button_sequences(machine: Machine) -> i32 {
 		})
 		.collect();
 
-	// Precompute all reachable patterns and their minimal press counts
-	button_combination_patterns(&coeffs, num_indicators)
+	// Precompute all reachable patterns and their minimal press counts (cached across machines)
+	button_combination_patterns(coeffs, num_indicators)
 		.get(&machine.goal_indicator_seq)
 		.copied()
 		.unwrap_or(usize::MAX) as i32
@@ -72,7 +74,7 @@ pub fn process(input: &str) -> miette::Result<String> {
 struct Machine {
 	goal_indicator_seq: Vec<bool>,
 	button_seq: Vec<Vec<u8>>,
-	joltage_seq: Vec<u16>,
+	_joltage_seq: Vec<u16>,
 }
 
 fn parse(input: &str) -> IResult<&str, Vec<Machine>> {
@@ -85,14 +87,14 @@ fn parse(input: &str) -> IResult<&str, Vec<Machine>> {
 			separated_list1(space1, parse_button_seq).parse(single_input)?;
 		let (single_input, _) = complete::space1(single_input)?;
 		// joltage parser
-		let (single_input, joltage_seq) = parse_joltage_seq(single_input)?;
+		let (single_input, _joltage_seq) = parse_joltage_seq(single_input)?;
 
 		Ok((
 			single_input,
 			Machine {
 				goal_indicator_seq,
 				button_seq,
-				joltage_seq,
+				_joltage_seq,
 			},
 		))
 	})

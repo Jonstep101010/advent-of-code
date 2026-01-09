@@ -3,8 +3,8 @@ import itertools
 
 
 def button_combination_patterns(
-	coeffs: list[tuple[int, ...]],
-) -> dict[tuple[int, ...], dict[tuple[int, ...], int]]:
+	coeffs: list[tuple[bool, ...]],
+) -> dict[tuple[bool, ...], dict[tuple[int, ...], int]]:
 	"""
 	Group all possible button combinations by parity pattern.
 
@@ -22,7 +22,7 @@ def button_combination_patterns(
 			effect = tuple(
 				sum(coeffs[i][j] for i in button_indices) for j in range(num_joltages)
 			)
-			parity = tuple(e % 2 for e in effect)
+			parity = tuple(bool(e % 2) for e in effect)
 
 			# Store minimal press count for this effect
 			if effect not in patterns_by_parity[parity]:
@@ -39,7 +39,7 @@ def process(button_seq: list[tuple[int, ...]], joltage_seq: tuple[int, ...]) -> 
 	"""
 	# Convert buttons to binary coefficients (1 if button affects light, 0 otherwise)
 	coeffs = [
-		tuple(int(i in button) for i in range(len(joltage_seq)))
+		tuple(bool(i in button) for i in range(len(joltage_seq)))
 		for button in button_seq
 	]
 
@@ -52,7 +52,7 @@ def process(button_seq: list[tuple[int, ...]], joltage_seq: tuple[int, ...]) -> 
 			return 0
 		min_presses = float("inf")
 		# Get patterns matching goal's parity
-		parity = tuple(g % 2 for g in goal)
+		parity = tuple(bool(g % 2) for g in goal)
 		phase1_candidates = patterns_by_parity[parity].items()
 		for phase1_effect, phase1_presses in phase1_candidates:
 			# Check if phase1 effect is achievable (all components <= goal)
